@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tea Horse Road StoryMap | Yunnan Quest</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+            background-color: #f9f7f2;
+            color: #333;
+        }
+
+        #map-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        #story-map {
+            width: 100%;
+            height: 100%;
+        }
+
+        #story-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .story-step {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 100px 0;
+            opacity: 0.3;
+            transition: opacity 0.5s ease;
+        }
+
+        .story-step.active {
+            opacity: 1;
+        }
+
+        .step-content {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .step-content h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #2c5530;
+            text-align: center;
+        }
+
+        .step-content h2 {
+            font-size: 2.2em;
+            margin-bottom: 25px;
+            color: #2c5530;
+            border-bottom: 2px solid #e8c4a1;
+            padding-bottom: 10px;
+        }
+
+        .step-content h3 {
+            font-size: 1.5em;
+            margin: 25px 0 15px;
+            color: #8B4513;
+        }
+
+        .step-content p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            font-size: 1.1em;
+        }
+
+        .media-gallery {
+            margin: 25px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .media-gallery img {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .media-gallery img:hover {
+            transform: scale(1.03);
+        }
+
+        .fun-fact {
+            background: #e8f4e8;
+            padding: 15px;
+            border-left: 4px solid #4caf50;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-style: italic;
+        }
+
+        #progress-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 25px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            min-width: 500px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin-bottom: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4caf50, #8BC34A);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .location-names {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+        }
+
+        .location {
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+            font-weight: 500;
+        }
+
+        .location.active {
+            opacity: 1;
+            font-weight: bold;
+            color: #2c5530;
+        }
+
+        .cta-button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 30px auto 0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .cta-button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .historical-section, .modern-section {
+            margin-bottom: 25px;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e8c4a1, transparent);
+            margin: 25px 0;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            #story-container {
+                max-width: 90%;
+                padding: 10px;
+            }
+            
+            .step-content {
+                padding: 20px;
+            }
+            
+            .step-content h1 {
+                font-size: 2em;
+            }
+            
+            .step-content h2 {
+                font-size: 1.5em;
+            }
+            
+            #progress-indicator {
+                bottom: 10px;
+                padding: 10px 15px;
+                min-width: 300px;
+            }
+            
+            .progress-bar {
+                width: 100%;
+            }
+            
+            .media-gallery {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .leaflet-popup-content {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .marker-popup h3 {
+            color: #2c5530;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 地图容器 -->
+    <div id="map-container">
+        <div id="story-map"></div>
+    </div>
+
+    <!-- 故事内容容器 -->
+    <div id="story-container">
+        <!-- 开场部分 -->
+        <section id="intro" class="story-step active" data-step="0">
+            <div class="step-content">
+                <h1>The Ancient Tea-Horse Road</h1>
+                <p class="subtitle" style="text-align: center; font-size: 1.3em; margin-bottom: 30px; color: #666;">A Journey Through Time in Yunnan</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #8B4513, #2c5530); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2em;">
+                        Interactive Story Map
+                    </div>
+                </div>
+                <p style="text-align: center; font-size: 1.1em;">Follow the legendary trade route that connected China with Tibet and Southeast Asia, carrying tea, horses, and culture across majestic landscapes.</p>
+                <button id="start-journey" class="cta-button">Begin Journey</button>
+            </div>
+        </section>
+
+        <!-- 西双版纳 -->
+        <section class="story-step" data-step="1" data-lat="21.9588" data-lng="100.2191" data-zoom="9">
+            <div class="step-content">
+                <h2>Xishuangbanna: The Tea Origin</h2>
+                
+                <div class="historical-section">
+                    <h3>Ancient Tea Horse Road History</h3>
+                    <p>Xishuangbanna was the southern starting point of the Tea Horse Road, where the legendary Pu'er tea began its long journey north. For centuries, caravans loaded with compressed tea cakes departed from these lush tropical forests, embarking on the perilous route to Tibet.</p>
+                    <p>The Dai people were master tea cultivators, tending to ancient tea trees that were highly prized. Tea was compressed into cakes for easier transport, with some specially prepared for Tibetan monasteries and nobility.</p>
+                </div>
+                
+                <div class="section-divider"></div>
+                
+                <div class="modern-section">
+                    <h3>Modern Xishuangbanna Experience</h3>
+                    <p>Today, Xishuangbanna remains the heartland of Pu'er tea production. Visitors can explore the <strong>Ancient Tea Horse Road Cultural Park</strong> and witness traditional tea processing methods. The region's tropical rainforests are now protected reserves where you can see wild tea trees over 800 years old.</p>
+                    <p>Don't miss the vibrant <strong>Water-Splashing Festival</strong> each April, where Dai communities celebrate their new year with traditional dances, dragon boat races, and the famous water blessing ceremony.</p>
+                </div>
+
+                <div class="media-gallery">
+                    <div style="background: #e8f4e8; border-radius: 10px; padding: 15px; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3em; color: #4caf50;">🌿</div>
+                            <p>Ancient Tea Forests</p>
+                        </div>
+                    </div>
+                    <div style="background: #fff8e1; border-radius: 10px; padding: 15px; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3em; color: #ff9800;">💦</div>
+                            <p>Water Festival</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fun-fact">
+                    <strong>Did you know?</strong> Some tea trees in Xishuangbanna are over 800 years old and still producing leaves for premium Pu'er tea!
+                </div>
+            </div>
+        </section>
+
+        <!-- 大理 -->
+        <section class="story-step" data-step="2" data-lat="25.6065" data-lng="100.2676" data-zoom="11">
+            <div class="step-content">
+                <h2>Dali: The Ancient Kingdom</h2>
+                
+                <div class="historical-section">
+                    <h3>Ancient Tea Horse Road History</h3>
+                    <p>Dali served as a crucial trading hub on the Tea Horse Road, strategically located between the tea-producing south and the tea-consuming Tibetan plateau. The ancient Nanzhao and Dali kingdoms controlled this vital section of the route, taxing caravans and providing safe passage.</p>
+                    <p>Here, tea was traded for salt, horses, and other goods. The Bai people developed sophisticated trade networks and their distinctive architectural style reflected the prosperity brought by the tea trade.</p>
+                </div>
+                
+                <div class="section-divider"></div>
+                
+                <div class="modern-section">
+                    <h3>Modern Dali Experience</h3>
+                    <p>Today, Dali's ancient town attracts visitors with its well-preserved architecture and stunning location between <strong>Cangshan Mountain</strong> and <strong>Erhai Lake</strong>. The old city walls, traditional Bai residences, and vibrant local markets give a glimpse into the region's trading past.</p>
+                    <p>Travelers can participate in <strong>tie-dye workshops</strong> to learn the Bai people's traditional craft, cycle around Erhai Lake, or take a cable car up Cangshan for breathtaking views of the entire region.</p>
+                </div>
+
+                <div class="media-gallery">
+                    <div style="background: #e3f2fd; border-radius: 10px; padding: 15px; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3em; color: #2196f3;">🏔️</div>
+                            <p>Cangshan Mountain</p>
+                        </div>
+                    </div>
+                    <div style="background: #f3e5f5; border-radius: 10px; padding: 15px; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3em; color: #9c27b0;">🎨</div>
+                            <p>Bai Tie-Dye Art</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fun-fact">
+                    <strong>Did you know?</strong> The Three Pagodas of Dali are over 1,000 years old and have survived numerous earthquakes!
+                </div>
+            </div>
+        </section>
+
+        <!-- 丽江 -->
+        <section class="story-step" data-step="3" data-lat="26.8550" data-lng="100.2278" data-zoom="12">
+            <div class="step-content">
+                <h2>Lijiang: Naxi Kingdom Gateway</h2>
+                
+                <div class="historical-section">
+                    <h3>Ancient Tea Horse Road History</h3>
+                    <p>Lijiang was the most critical commercial center on the Tea Horse Road, where the Naxi people under their wise leader Mufu developed sophisticated trading systems. Caravans would rest here before attempting the dangerous trek into Tibetan territory.</p>
+                    <p>The city's strategic location made it a natural meeting point for different cultures - Han Chinese, Tibetans, Bai, and Naxi merchants all traded in its markets. Tea was exchanged for Tibetan horses, medicinal herbs, and other precious goods.</p>
+                </div>
+                
+                <div class="section-divider"></div>
+                
+                <div class="modern-section">
+                    <h3>Modern Lijiang Experience</h3>
+                    <p>Lijiang's <strong>Old Town</strong>, a UNESCO World Heritage site, preserves the ancient network of canals, stone bridges, and traditional Naxi architecture. Visitors can explore its cobbled streets, listen to ancient Naxi music performances, and admire the stunning <strong>Jade Dragon Snow Mountain</strong> that dominates the skyline.</p>
+                    <p>The <strong>Dongba Cultural Museum</strong> offers insights into the unique Naxi pictographic script, one of the last living hieroglyphic systems in the world. Don't miss the chance to taste Yak Hotpot, a local specialty influenced by Tibetan cuisine.</p>
+                </div>
+
+                <div class="media-gallery">
+                    <div style="background: #fff3e0; border-radius: 10px; padding: 15px; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3em; color: #ff9800;">🏯</div>
+                            <p>Ancient Town</p>
+                        </div>
+                    </div>
+                    <div style="background: #e8f5e9; border-radius: 10px; padding: 15px; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3em; color: #4caf50;">❄️</div>
+                            <p>Jade Dragon Mountain</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fun-fact">
+                    <strong>Did you know?</strong> Lijiang's Old Town has a sophisticated water system from the Jade River that still provides fresh water to residents today!
+                </div>
+            </div>
+        </section>
+
+        <!-- 香格里拉 -->
+        <section class="story-step" data-step="4" data-lat="27.8251" data-lng="99.7070" data-zoom="10">
+            <div class="step-content">
+                <h2>Shangri-La: Tibetan Gateway</h2>
+                
+                <div class="historical-section">
+                    <h3>Ancient Tea Horse Road History</h3>
+                    <p>Shangri-La (formerly Zhongdian) marked the transition into Tibetan cultural territory and was the last major stop before caravans faced the most dangerous section of the journey across the Himalayas. Here, tea was traded for strong Tibetan horses that were prized by Chinese armies.</p>
+                    <p>This region was crucial for the exchange of not just goods but ideas - Buddhism traveled along these routes, influencing the cultures along the way. The perilous journey through high mountain passes claimed many lives, making safe arrival in Shangri-La a cause for celebration.</p>
+                </div>
+                
+                <div class="section-divider"></div>
+                
+                <div class="modern-section">
+                    <h3>Modern Shangri-La Experience</h3>
+                    <p>Today, Shangri-La offers visitors a taste of Tibetan culture without crossing into Tibet. The magnificent <strong>Ganden Sumtseling Monastery</strong>, known as "Little Potala Palace," is a must-visit, where you can witness monks chanting and spinning prayer wheels.</p>
+                    <p>Adventurous travelers can explore <strong>Potatso National Park</strong> with its pristine lakes and meadows, or visit the dramatic <strong>Tiger Leaping Gorge</strong> nearby. The old town of Dukezong, with its ancient cobbled streets and traditional Tibetan houses, was recently restored after a fire.</p>
+                </div>
+
+                <div class="media-gallery">
+                    <div style="background: #fce4ec; border-radius: 10px; padding: 15px; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3em; color: #e91e63;">🕌</div>
+                            <p>Sumtseling Monastery</p>
+                        </div>
+                    </div>
+                    <div style="background: #e0f2f1; border-radius: 10px; padding: 15px; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3em; color: #009688;">🌄</div>
+                            <p>Potatso National Park</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fun-fact">
+                    <strong>Did you know?</strong> The name "Shangri-La" comes from James Hilton's 1933 novel "Lost Horizon," describing a mythical Himalayan paradise!
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 进度指示器 -->
+    <div id="progress-indicator">
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+        <div class="location-names">
+            <span class="location">Xishuangbanna</span>
+            <span class="location">Dali</span>
+            <span class="location">Lijiang</span>
+            <span class="location">Shangri-La</span>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/scrollama"></script>
+    <script>
+        // 故事节点数据
+        const storyData = [
+            {
+                step: 0,
+                title: "The Ancient Tea-Horse Road",
+                subtitle: "A Journey Through Time in Yunnan",
+                type: "intro",
+                center: [25.0452, 102.7097],
+                zoom: 7
+            },
+            {
+                step: 1,
+                title: "Xishuangbanna: The Tea Origin",
+                content: "Our journey begins in the tropical rainforests of Xishuangbanna...",
+                coordinates: [21.9588, 100.2191],
+                zoom: 9,
+                markers: [
+                    {
+                        lat: 21.9588,
+                        lng: 100.2191,
+                        title: "Ancient Tea Forests",
+                        description: "Home to 800-year-old tea trees where Pu'er tea originates",
+                        type: "tea"
+                    }
+                ]
+            },
+            {
+                step: 2,
+                title: "Dali: The Ancient Kingdom",
+                content: "Nestled between the Cangshan Mountains and Erhai Lake...",
+                coordinates: [25.6065, 100.2676],
+                zoom: 11,
+                markers: [
+                    {
+                        lat: 25.6065,
+                        lng: 100.2676,
+                        title: "Dali Ancient Town",
+                        description: "Historic trading hub with Bai architecture and Three Pagodas",
+                        type: "culture"
+                    }
+                ]
+            },
+            {
+                step: 3,
+                title: "Lijiang: Naxi Kingdom Gateway",
+                content: "Lijiang was the most critical commercial center on the Tea Horse Road...",
+                coordinates: [26.8550, 100.2278],
+                zoom: 12,
+                markers: [
+                    {
+                        lat: 26.8550,
+                        lng: 100.2278,
+                        title: "Lijiang Old Town",
+                        description: "UNESCO World Heritage site with ancient canals and Naxi culture",
+                        type: "culture"
+                    }
+                ]
+            },
+            {
+                step: 4,
+                title: "Shangri-La: Tibetan Gateway",
+                content: "Shangri-La marked the transition into Tibetan cultural territory...",
+                coordinates: [27.8251, 99.7070],
+                zoom: 10,
+                markers: [
+                    {
+                        lat: 27.8251,
+                        lng: 99.7070,
+                        title: "Ganden Sumtseling Monastery",
+                        description: "Tibetan Buddhist monastery known as 'Little Potala Palace'",
+                        type: "culture"
+                    }
+                ]
+            }
+        ];
+
+        // 茶马古道路线坐标
+        const teaHorseRoute = [
+            [21.9588, 100.2191],
+            [23.5, 100.5],
+            [25.6065, 100.2676],
+            [26.2, 100.3],
+            [26.8550, 100.2278],
+            [27.3, 99.8],
+            [27.8251, 99.7070]
+        ];
+
+        class StoryMap {
+            constructor() {
+                this.map = null;
+                this.scroller = null;
+                this.currentStep = 0;
+                this.routeLine = null;
+                this.markers = [];
+                
+                this.init();
+            }
+
+            init() {
+                this.initMap();
+                this.initScrollama();
+                this.drawRoute();
+                this.addEventListeners();
+                this.updateProgressIndicator(0);
+            }
+
+            initMap() {
+                this.map = L.map('story-map').setView([25.0452, 102.7097], 7);
+                
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '©OpenStreetMap, ©CartoDB',
+                    subdomains: 'abcd',
+                    maxZoom: 20
+                }).addTo(this.map);
+
+                this.map.scrollWheelZoom.disable();
+                this.map.dragging.disable();
+                this.map.touchZoom.disable();
+                this.map.doubleClickZoom.disable();
+                this.map.boxZoom.disable();
+                this.map.keyboard.disable();
+            }
+
+            initScrollama() {
+                this.scroller = scrollama();
+                
+                this.scroller
+                    .setup({
+                        step: '.story-step',
+                        offset: 0.6,
+                        progress: true,
+                        debug: false
+                    })
+                    .onStepEnter(this.handleStepEnter.bind(this))
+                    .onStepProgress(this.handleStepProgress.bind(this));
+            }
+
+            handleStepEnter(response) {
+                const step = response.element;
+                const stepNumber = parseInt(step.dataset.step);
+                this.currentStep = stepNumber;
+                
+                document.querySelectorAll('.story-step').forEach(s => s.classList.remove('active'));
+                step.classList.add('active');
+                
+                if (stepNumber === 0) return;
+                
+                const lat = parseFloat(step.dataset.lat);
+                const lng = parseFloat(step.dataset.lng);
+                const zoom = parseInt(step.dataset.zoom);
+                
+                this.map.flyTo([lat, lng], zoom, {
+                    duration: 2
+                });
+                
+                this.updateProgressIndicator(stepNumber);
+                this.updateMarkers(stepNumber);
+            }
+
+            handleStepProgress(response) {
+                const progress = response.progress;
+                if (response.index === this.currentStep) {
+                    const stepProgress = (response.index + progress) / (storyData.length - 1);
+                    document.querySelector('.progress-fill').style.width = `${stepProgress * 100}%`;
+                }
+            }
+
+            drawRoute() {
+                this.routeLine = L.polyline(teaHorseRoute, {
+                    color: '#8B4513',
+                    weight: 4,
+                    opacity: 0.7,
+                    dashArray: '10, 10',
+                    lineCap: 'round'
+                }).addTo(this.map);
+            }
+
+            updateMarkers(stepNumber) {
+                this.markers.forEach(marker => this.map.removeLayer(marker));
+                this.markers = [];
+                
+                const stepData = storyData.find(data => data.step === stepNumber);
+                if (stepData && stepData.markers) {
+                    stepData.markers.forEach(markerData => {
+                        const customIcon = L.divIcon({
+                            className: 'custom-marker',
+                            html: `<div style="background-color: ${markerData.type === 'tea' ? '#4caf50' : '#8B4513'}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        });
+                        
+                        const marker = L.marker([markerData.lat, markerData.lng], {icon: customIcon})
+                            .addTo(this.map)
+                            .bindPopup(`
+                                <div class="marker-popup">
+                                    <h3>${markerData.title}</h3>
+                                    <p>${markerData.description}</p>
+                                </div>
+                            `);
+                        
+                        this.markers.push(marker);
+                    });
+                }
+            }
+
+            updateProgressIndicator(stepNumber) {
+                const progress = (stepNumber / (storyData.length - 1)) * 100;
+                document.querySelector('.progress-fill').style.width = `${progress}%`;
+                
+                document.querySelectorAll('.location').forEach((loc, index) => {
+                    loc.classList.toggle('active', index === stepNumber - 1);
+                });
+            }
+
+            addEventListeners() {
+                document.getElementById('start-journey').addEventListener('click', () => {
+                    document.querySelectorAll('.story-step')[1].scrollIntoView({ 
+                        behavior: 'smooth' 
+                    });
+                });
+
+                window.addEventListener('resize', this.scroller.resize);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new StoryMap();
+        });
+    </script>
+</body>
+</html>

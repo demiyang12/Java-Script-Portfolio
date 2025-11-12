@@ -1,0 +1,148 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    overflow-x: hidden;
+}
+
+#map-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: 1;
+}
+
+#story-map {
+    width: 100%;
+    height: 100%;
+}
+
+#story-container {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.story-step {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 100px 0;
+    opacity: 0.3;
+    transition: opacity 0.5s ease;
+}
+
+.story-step.active {
+    opacity: 1;
+}
+
+.step-content {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.step-content h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+    color: #2c5530;
+}
+
+.step-content h2 {
+    font-size: 2em;
+    margin-bottom: 20px;
+    color: #2c5530;
+}
+
+.media-gallery {
+    margin: 20px 0;
+}
+
+.media-gallery img {
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+.fun-fact {
+    background: #e8f4e8;
+    padding: 15px;
+    border-left: 4px solid #4caf50;
+    border-radius: 5px;
+}
+
+#progress-indicator {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 15px 25px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+}
+
+.progress-bar {
+    width: 300px;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 25%; /* 动态更新 */
+    background: #4caf50;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.location-names {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+}
+
+.location {
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+
+.location.active {
+    opacity: 1;
+    font-weight: bold;
+    color: #2c5530;
+}
+
+.cta-button {
+    background: #4caf50;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 25px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.cta-button:hover {
+    background: #45a049;
+}
