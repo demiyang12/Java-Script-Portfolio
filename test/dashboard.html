@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Market Intelligence - Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <header>
+        <h2>Market Intelligence</h2>
+        <div class="kpi-group">
+            <div class="kpi">Avg Daily Cost: <span>$55</span></div>
+            <div class="kpi">Best Weather: <span>Oct-Nov</span></div>
+            <div class="kpi">Total POIs: <span>42</span></div>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <div class="bento-card filters">
+            <h3>Filter by Interest</h3>
+            <div class="tag-cloud" id="tagCloud">
+                <div class="tag active" data-cat="all">All</div>
+                <div class="tag" data-cat="Nature">Nature</div>
+                <div class="tag" data-cat="Culture">Culture</div>
+                <div class="tag" data-cat="Food">Food</div>
+            </div>
+
+            <h3>Travel Month</h3>
+            <div class="slider-container">
+                <input type="range" min="1" max="12" value="4" id="monthSlider" style="width:100%">
+                <p>Selected: <span id="monthDisplay">April</span></p>
+            </div>
+            <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">
+                *Month affects precipitation chart and budget estimates.
+            </p>
+        </div>
+
+        <div class="bento-card" style="padding: 0;">
+            <div id="dash-map"></div>
+        </div>
+
+        <div class="charts-col">
+            <div class="bento-card">
+                <div class="chart-wrapper"><canvas id="tempChart"></canvas></div>
+            </div>
+            <div class="bento-card">
+                <div class="chart-wrapper"><canvas id="popChart"></canvas></div>
+            </div>
+            <div class="bento-card">
+                <div class="chart-wrapper"><canvas id="budgetChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <a href="interactive.html" class="fab">Start Planning My Trip &rarr;</a>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

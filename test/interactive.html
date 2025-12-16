@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Yunnan Planner - Komoot Style</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/interactive.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div class="sidebar-float">
+        <div class="sidebar-header">
+            <h1><i class="fa-solid fa-mountain-sun"></i> Yunnan Odyssey</h1>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <span class="label">Total Cost</span>
+                    <span class="value" id="totalCost">$0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Stops</span>
+                    <span class="value" id="totalStops">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="days-container">
+            <div class="day-card">
+                <div class="day-title">Day 1: The Start</div>
+                <ul class="waypoint-list" id="day1" data-day="1">
+                    <li class="empty-state">Select spots from map...</li>
+                </ul>
+            </div>
+            
+            <div class="day-card">
+                <div class="day-title">Day 2: The Adventure</div>
+                <ul class="waypoint-list" id="day2" data-day="2">
+                    <li class="empty-state">Drag items here...</li>
+                </ul>
+            </div>
+        </div>
+
+        <button class="btn-save" onclick="alert('Route saved!')">Save Tour</button>
+    </div>
+
+    <div class="bottom-panel">
+        <div class="chart-header">
+            <span>Elevation / Experience Profile</span>
+            <button class="close-chart">×</button>
+        </div>
+        <div class="chart-container">
+            <canvas id="elevationChart"></canvas>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/interactive.js"></script>
+</body>
+</html>
