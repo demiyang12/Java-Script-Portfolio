@@ -3,52 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inspiration - The Tea Horse Road</title>
+    <title>The Ancient Tea Horse Road</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/storymap.css">
 </head>
 <body>
+
     <div id="map"></div>
-    <div id="story">
-        <div class="step" data-step="0">
-            <div class="content-box">
-                <h2>The Tea Horse Road</h2>
-                <p>For centuries, brave traders traversed the treacherous paths of the <span class="highlight">Yunnan-Guizhou Plateau</span>. They traded Chinese tea for Tibetan horses, forging a network of paths that linked cultures, religions, and people.</p>
-                <p>Scroll down to trace their journey.</p>
+
+    <div id="story-container">
+        
+        <div class="story-step" id="step-0">
+            <div class="content-wrapper">
+                <div class="text-group">
+                    <div class="chapter-label">Chapter 01 · The Origin</div>
+                    <h1>The Green Gold</h1>
+                    <h2><i class="fa-solid fa-leaf"></i> Pu'er & Xishuangbanna</h2>
+                    <div class="narrative-text">
+                        <p>
+                            More than a millennium ago, this humid rainforest was the starting point of the longest trade route in the ancient world. Here, the muleteers (known as <i>Mabang</i>) compressed loose tea leaves into dense, round cakes to withstand the damp journey ahead.
+                        </p>
+                        <p>
+                            Before departing, the caravan leader would offer incense to the gods. They faced a year-long trek, fearing not just the bandits, but the deadly "miasma" (malaria) of the tropical valleys. It was a gamble of life for prosperity.
+                        </p>
+                    </div>
+                    <div class="insight-box">
+                        <i class="fa-solid fa-chart-line"></i> <b>Modern Intelligence:</b><br>
+                        No need to gamble with the weather today. <br>
+                        The <b>Climate Chart</b> on the dashboard indicates that <b>October to March</b> offers the lowest precipitation and optimal travel comfort.
+                    </div>
+                </div>
+                
+                <div class="image-group">
+                    <img src="https://placehold.co/600x400/ffffff/d35400?text=Dashboard:+Climate+Trends&font=lato" 
+                         class="dashboard-screenshot">
+                    <span class="caption">▲ Dashboard Insight: Seasonal Weather Trends</span>
+                </div>
             </div>
         </div>
-        <div class="step" data-step="1">
-            <div class="content-box">
-                <h2>Dali: Wind, Flowers, Snow, Moon</h2>
-                <p>Nestled between the <span class="highlight">Cangshan Mountains</span> and Erhai Lake. Dali was the ancient capital of the Nanzhao and Dali Kingdoms.</p>
-                <p>Here, life slows down. The Bai people worship their white architecture and the eternal spring.</p>
+
+        <div class="story-step" id="step-1">
+            <div class="content-wrapper">
+                <div class="text-group">
+                    <div class="chapter-label">Chapter 02 · The Hub</div>
+                    <h1>The Great Barter</h1>
+                    <h2><i class="fa-solid fa-scale-balanced"></i> Dali Ancient City</h2>
+                    <div class="narrative-text">
+                        <p>
+                            Arriving in Dali, the caravans entered a bustling world of commerce. This was the choke point where tea from the south met horses from the north. The Bai people facilitated a massive exchange—one warhorse was often worth 60kg of tea.
+                        </p>
+                        <p>
+                            The markets were loud with bargaining in a dozen dialects. It was here that the muleteers restocked supplies, repaired their gear, and prepared for the ascent into the high altitude.
+                        </p>
+                    </div>
+                    <div class="insight-box">
+                        <i class="fa-solid fa-coins"></i> <b>Modern Intelligence:</b><br>
+                        Trade has evolved into "Value for Money."<br>
+                        Our <b>Cost Ranking</b> shows Dali is the #2 most popular spot, yet maintains a low daily average cost of <b>$45</b>. High cultural density, low expense.
+                    </div>
+                </div>
+                
+                <div class="image-group">
+                    <img src="https://placehold.co/600x400/ffffff/2980b9?text=Dashboard:+Cost+Ranking&font=lato" 
+                         class="dashboard-screenshot">
+                    <span class="caption">▲ Dashboard Insight: Cost & Location Ranking</span>
+                </div>
             </div>
         </div>
-        <div class="step" data-step="2">
-            <div class="content-box">
-                <h2>Lijiang: Naxi Heritage</h2>
-                <p>Further north lies Lijiang, a maze of cobblestone streets and canals. This is the heart of the <span class="highlight">Naxi culture</span>.</p>
-                <p>Dominated by the Jade Dragon Snow Mountain, it is a place where music and Dongba hieroglyphs survive.</p>
+
+        <div class="story-step" id="step-2">
+            <div class="content-wrapper">
+                <div class="text-group">
+                    <div class="chapter-label">Chapter 03 · The Ascent</div>
+                    <h1>Into the Thin Air</h1>
+                    <h2><i class="fa-solid fa-mountain"></i> Lijiang & Jade Dragon</h2>
+                    <div class="narrative-text">
+                        <p>
+                            Beyond Lijiang, the "Tea Horse Road" transformed from a dirt path into a treacherous lifeline carved into cliffs. The Naxi people called this the threshold of the heavens.
+                        </p>
+                        <p>
+                            The Jade Dragon Snow Mountain loomed overhead. Many mules—and men—were lost here, slipping from icy, narrow ledges into the Jinsha River gorge below. It was a test of endurance against the elements.
+                        </p>
+                    </div>
+                    <div class="insight-box">
+                        <i class="fa-solid fa-comments"></i> <b>Modern Intelligence:</b><br>
+                        The danger today is overcrowding, not cliffs.<br>
+                        The <b>Social Feed</b> on the right warns: <i>"The view is majestic, but the cable car queue is 2 hours long."</i> Use our data to time your visit perfectly.
+                    </div>
+                </div>
+                
+                <div class="image-group">
+                    <img src="https://placehold.co/400x600/ffffff/e74c3c?text=Dashboard:+Social+Reviews&font=lato" 
+                         class="dashboard-screenshot" style="width: 70%;">
+                    <span class="caption">▲ Dashboard Insight: Real-time Traveler Reviews</span>
+                </div>
             </div>
         </div>
-        <div class="step" data-step="3">
-            <div class="content-box">
-                <h2>Shangri-La: The Lost Horizon</h2>
-                <p>At 3,160 meters, the air thins. You have arrived in Gyalthang (Shangri-La). This is the gateway to Tibet.</p>
-                <p>Golden monasteries gleam against the backdrop of snowy peaks. It is savage, holy, and breathtaking.</p>
+
+        <div class="story-step" id="step-3">
+            <div class="content-wrapper">
+                <div class="text-group">
+                    <div class="chapter-label">Chapter 04 · The Sanctuary</div>
+                    <h1>A Spiritual Arrival</h1>
+                    <h2><i class="fa-solid fa-hands-praying"></i> Shangri-La (Zhongdian)</h2>
+                    <div class="narrative-text">
+                        <p>
+                            Upon reaching the Tibetan plateau, the exhausting journey found its spiritual release. At the Songzanlin Monastery, tea was brewed into butter tea—a staple for survival in the cold.
+                        </p>
+                        <p>
+                            Muleteers would offer part of their profits to the temples, grateful for surviving the journey. Here, commerce blended seamlessly with deep devotion.
+                        </p>
+                    </div>
+                    <div class="insight-box">
+                        <i class="fa-solid fa-filter"></i> <b>Modern Intelligence:</b><br>
+                        Find your own sanctuary.<br>
+                        By applying the <b>[Culture]</b> filter on the dashboard, you can isolate historical temples and avoid the commercial tourist traps.
+                    </div>
+                </div>
+                
+                <div class="image-group">
+                    <img src="https://placehold.co/600x400/ffffff/8e44ad?text=Dashboard:+POI+Details&font=lato" 
+                         class="dashboard-screenshot">
+                    <span class="caption">▲ Dashboard Insight: POI & Cultural Filter</span>
+                </div>
             </div>
         </div>
-        <div class="step" style="justify-content: center;" data-step="4">
-            <div class="content-box cta-box">
-                <h2>Inspired by the mountains?</h2>
-                <p>Don't just dream about it. Analyze the best time to visit and check the budget.</p>
-                <a href="dashboard.html" class="btn-main">Analyze the Data &rarr;</a>
+
+        <div class="story-step" id="step-4">
+            <div class="content-wrapper" style="justify-content: center;">
+                <div class="text-group" style="width: 80%; text-align: center; text-shadow: none;">
+                    <h1 style="text-shadow: 0 0 30px rgba(255,255,255,1);">Your Journey Awaits</h1>
+                    <div class="narrative-text" style="max-width: 800px; margin: 0 auto 40px auto; text-shadow: 0 0 20px rgba(255,255,255,1);">
+                        <p>
+                            The ancient bells of the caravans have faded, but the route remains. 
+                            We have gathered the data, the stories, and the insights.
+                            Now, it is your turn to explore.
+                        </p>
+                    </div>
+                    <a href="dashboard.html" class="btn-enter">
+                        Launch Dashboard <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
             </div>
         </div>
+        
+        <div class="spacer"></div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/scrollama"></script>
     <script src="js/storymap.js"></script>
 </body>
 </html>
