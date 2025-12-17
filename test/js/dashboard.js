@@ -1,88 +1,299 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, addDoc, query, where, orderBy, onSnapshot, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// ★★★ 请替换为你自己的 Firebase 配置 ★★★
+const firebaseConfig = {
+    apiKey: "AIzaSyAMIT38af7QwiB9iiw8tl0v6k5pm0rZJ4I",
+    authDomain: "yunnanodyssey.firebaseapp.com",
+    projectId: "yunnanodyssey",
+    storageBucket: "yunnanodyssey.firebasestorage.app",
+    messagingSenderId: "184293573238",
+    appId: "1:184293573238:web:3ae1188dfde704b6bad557",
+    measurementId: "G-LDE0GNT38D"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const CURRENT_USER_ID = "user_demo_001"; 
+
 // =========================================
-// 1. 数据配置 (Data Configuration)
+// 1. 数据配置 & 辅助变量
 // =========================================
 
-// 月份主题数据
+// 类别颜色映射 (用于 Chart)
+const categoryColors = {
+    "Nature": "#3494a6",   // Teal
+    "Culture": "#1a3c5a",  // Dark Blue
+    "Food": "#bf4328",     // Orange
+    "Stay": "#e0b341"      // Yellow
+};
+
+// 月份与 Activity 标签的映射关系
+const activityMapping = {
+    "Floral & Splash": [3, 4, 5],     // 春季
+    "Mushroom Hunting": [6, 7, 8],    // 夏季
+    "Golden Autumn": [9, 10, 11],     // 秋季
+    "Snow & Sun": [12, 1, 2]          // 冬季
+};
+
+// 月份主题显示内容
 const monthlyThemes = {
-    1: { title: "Naxi Sanduo Festival", desc: "Celebrating the patron god of Naxi people.", img: "https://images.unsplash.com/photo-1547823065-4cbbb2d4d185?q=80&w=2070&auto=format&fit=crop" },
-    4: { title: "Water Splashing Festival", desc: "The Dai New Year. Get ready to be soaked!", img: "https://images.unsplash.com/photo-1527236582914-874288b49520?q=80&w=2071&auto=format&fit=crop" },
-    7: { title: "Torch Festival (Fire)", desc: "The wildest celebration of the Yi people.", img: "https://images.unsplash.com/photo-1516961642265-531546e84af2?q=80&w=1000&auto=format&fit=crop" },
-    10: { title: "Golden Rice Terraces", desc: "Best time to view the Yuanyang Rice Terraces.", img: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1948&auto=format&fit=crop" },
-    12: { title: "Cherry Blossoms", desc: "Wuliang Mountain covered in pink.", img: "https://plus.unsplash.com/premium_photo-1675805015392-28fd80c551ec?q=80&w=1932&auto=format&fit=crop" }
+    4: { title: "Floral & Splash", desc: "Experience the Water Splashing Festival and blooming flowers.", img: "https://images.unsplash.com/photo-1527236582914-874288b49520?q=80&w=2071" },
+    7: { title: "Mushroom Hunting", desc: "The rainy season brings delicious wild mushrooms.", img: "https://images.unsplash.com/photo-1627387397274-04646a29792a?q=80&w=1974" },
+    10: { title: "Golden Autumn", desc: "Golden rice terraces and harvest season.", img: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1948" },
+    12: { title: "Snow & Sun", desc: "Enjoy the snow-capped mountains under the warm sun.", img: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070" }
 };
 
-// POI 数据
-const poiData = [
-    { id: 1, name: "Erhai Lake View Hotel", lat: 25.69, lng: 100.16, cat: "Stay", score: 95, img: "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?q=80&w=2074&auto=format&fit=crop", desc: "Luxury boutique hotel right by the lake.", fac: [1,1,1,1] },
-    { id: 2, name: "Dali Old Town", lat: 25.69, lng: 100.14, cat: "Culture", score: 90, img: "https://images.unsplash.com/photo-1508804185872-d7badad00f7d?q=80&w=2070&auto=format&fit=crop", desc: "Historic town with traditional Bai architecture.", fac: [1,0,1,1] },
-    { id: 3, name: "Jade Dragon Snow Mtn", lat: 27.09, lng: 100.20, cat: "Nature", score: 98, img: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070&auto=format&fit=crop", desc: "Holy mountain of Naxi people. Cable car available.", fac: [0,1,0,1] },
-    { id: 4, name: "Wild Yak Hotpot", lat: 27.80, lng: 99.72, cat: "Food", score: 75, img: "https://images.unsplash.com/photo-1549203767-a29c362145e6?q=80&w=2069&auto=format&fit=crop", desc: "Authentic Tibetan flavor, spicy and warming.", fac: [1,1,0,1] }
-];
+// 图片占位符
+const categoryImages = {
+    "Stay": "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070",
+    "Food": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2070",
+    "Nature": "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1948",
+    "Culture": "https://images.unsplash.com/photo-1547823065-4cbbb2d4d185?q=80&w=2070"
+};
 
-// Feed 数据
-const feedData = [
-    { id: 101, location: "Dali Old Town", title: "Hidden Gem in Dali! ☕️", user: "Traveler_A", likes: 342, img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop", content: "Found this amazing coffee shop..." },
-    { id: 102, location: "Erhai Lake View Hotel", title: "Sunset at Erhai is Unreal 😍", user: "Photo_Fan", likes: 890, img: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1948&auto=format&fit=crop", content: "Woke up to this view. Totally worth the price!" },
-    { id: 103, location: "Wild Yak Hotpot", title: "Best Noodles I've ever had", user: "Foodie_X", likes: 120, img: "https://images.unsplash.com/photo-1587314168485-3236d6710814?q=80&w=1978&auto=format&fit=crop", content: "Spicy, savory, and perfect for the cold weather." },
-    { id: 104, location: "Jade Dragon Snow Mtn", title: "Hiking Guide 2024", user: "Hiker_Joe", likes: 56, img: "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?q=80&w=2070&auto=format&fit=crop", content: "Make sure you bring oxygen tanks." },
-    { id: 105, location: "Dali Old Town", title: "Street Food Tour", user: "Yummy_Y", likes: 200, img: "https://images.unsplash.com/photo-1555126634-323283e090fa?q=80&w=1000&auto=format&fit=crop", content: "Trying the Xizhou Baba." }
-];
+let poiData = []; 
+let userWishlist = new Set();
+let map, markers;
+let popChart = null; // Chart 实例
+let tempChart = null;
 
 // =========================================
-// 2. 地图初始化 (Map Initialization)
+// 2. 初始化与数据加载
 // =========================================
 
-// 定义初始视角常量，供 Reset 功能使用
-const INITIAL_CENTER = [26.5, 100.5];
-const INITIAL_ZOOM = 7;
+async function initApp() {
+    // 1. 初始化地图
+    const INITIAL_CENTER = [24.5, 101.5]; 
+    const INITIAL_ZOOM = 7;
+    map = L.map('dash-map', { zoomControl: false }).setView(INITIAL_CENTER, INITIAL_ZOOM);
+    L.control.zoom({ position: 'topright' }).addTo(map);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+    markers = L.layerGroup().addTo(map);
 
-const map = L.map('dash-map', { zoomControl: false }).setView(INITIAL_CENTER, INITIAL_ZOOM);
-// Zoom 控件右上角
-L.control.zoom({ position: 'topright' }).addTo(map);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+    // 2. 同步 Wishlist
+    await syncWishlist();
 
-let markers = L.layerGroup().addTo(map);
+    // 3. 加载 GeoJSON 数据
+    try {
+        const response = await fetch('poi_new2_final.geojson');
+        const geoJson = await response.json();
+        
+        poiData = geoJson.features.map(f => {
+            const p = f.properties;
+            const cost = parseInt(p.Buget?.replace(/[^0-9]/g, '') || 0);
+            
+            // 整合所有 Activity
+            const activities = [p.Activity, p.Activity2, p.Activity3, p.Activity4].filter(Boolean);
 
-// ★★★ 重置地图视角函数 ★★★
-// 绑定到 HTML 中的 <button class="reset-map-btn">
-window.resetMapView = function() {
-    map.flyTo(INITIAL_CENTER, INITIAL_ZOOM, { 
-        duration: 1.5,
-        easeLinearity: 0.25
+            return {
+                id: String(p.osm_id), // 统一转字符串
+                name: p.name_E || p.name,
+                lat: f.geometry.coordinates[1],
+                lng: f.geometry.coordinates[0],
+                cat: p.Filter,
+                score: p.Score,
+                desc: p.Description,
+                img: p.Pic || categoryImages[p.Filter] || categoryImages['Nature'],
+                // 设施: [Wifi, Parking, Access, Dining]
+                fac: [p.Wifi, p.Parking, p.Accessibility, (p.Filter === 'Food' || p.Filter === 'Stay' ? 1 : 0)], 
+                link: p.Link,
+                tel: p.Tel_Number || "N/A", // 电话
+                time: p.Time || 1, // 游玩时间
+                cost: cost,
+                activities: activities
+            };
+        });
+
+        // 4. 初始化图表 (空数据)
+        initBaseCharts();
+
+        // 5. 渲染界面 (地图 + 第一次图表更新)
+        renderMap();
+        updateMonth(6); // 默认 7月 (Index 6)
+        
+        // 6. 加载帖子
+        loadAllPosts();
+
+    } catch (error) {
+        console.error("Failed to load POI data:", error);
+    }
+}
+
+// =========================================
+// 3. 核心逻辑：Wishlist & Map & Filter
+// =========================================
+
+async function syncWishlist() {
+    try {
+        const docRef = doc(db, "users", CURRENT_USER_ID);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const list = docSnap.data().wishlist || [];
+            userWishlist = new Set(list.map(String)); // 确保存入 Set 的都是字符串
+        } else {
+            await setDoc(docRef, { wishlist: [] });
+        }
+    } catch(e) { console.error("Wishlist sync error", e); }
+}
+
+window.toggleWishlist = async function(btn, poiId) {
+    const poiIdStr = String(poiId);
+    const docRef = doc(db, "users", CURRENT_USER_ID);
+    
+    if (userWishlist.has(poiIdStr)) {
+        userWishlist.delete(poiIdStr);
+        btn.classList.remove('added');
+        btn.innerHTML = '<i class="fa-regular fa-heart"></i> Add to Wishlist';
+        await updateDoc(docRef, { wishlist: arrayRemove(poiIdStr) });
+    } else {
+        userWishlist.add(poiIdStr);
+        btn.classList.add('added');
+        btn.innerHTML = '<i class="fa-solid fa-heart"></i> Added!';
+        await updateDoc(docRef, { wishlist: arrayUnion(poiIdStr) });
+    }
+    renderMap(); // 重新渲染以改变图标
+};
+
+let activeFilters = new Set(['all']);
+let currentMonth = 7; // 默认7月
+
+// ★★★ 核心渲染函数：地图 + 联动图表 ★★★
+function renderMap() {
+    markers.clearLayers();
+    
+    // 1. 获取当前月份对应的主题标签
+    let currentThemeTag = null;
+    for (const [tag, months] of Object.entries(activityMapping)) {
+        if (months.includes(currentMonth)) {
+            currentThemeTag = tag;
+            break;
+        }
+    }
+
+    // 2. 筛选出当前地图上要显示的点 (用于 Chart 计算)
+    const visiblePois = [];
+
+    poiData.forEach(p => {
+        // A. 类别筛选
+        if (!activeFilters.has('all') && !activeFilters.has(p.cat)) return;
+
+        visiblePois.push(p);
+
+        // B. 活动高亮逻辑 (Highlight Logic)
+        // 如果当前点包含当前月份的 Activity，则高亮；否则变暗
+        let isActivityMatch = false;
+        if (currentThemeTag && p.activities && p.activities.includes(currentThemeTag)) {
+            isActivityMatch = true;
+        }
+
+        // 定义样式：匹配的高亮，不匹配的半透明
+        const opacity = isActivityMatch ? 1.0 : 0.4; 
+        const radius = isActivityMatch ? 8 : 5;
+        // 如果是 Wishlist 里的点，始终不透明，但大小可以变化
+        const finalOpacity = userWishlist.has(p.id) ? 1.0 : opacity;
+
+        let marker;
+        const isWishlisted = userWishlist.has(p.id);
+
+        if (isWishlisted) {
+            // Wishlist 图标 (Interaction 风格)
+            let iconHtml = '<i class="fa-solid fa-location-dot"></i>';
+            if(p.cat === 'Nature') iconHtml = '<i class="fa-solid fa-mountain"></i>';
+            if(p.cat === 'Culture') iconHtml = '<i class="fa-solid fa-landmark"></i>';
+            if(p.cat === 'Food') iconHtml = '<i class="fa-solid fa-utensils"></i>';
+            if(p.cat === 'Stay') iconHtml = '<i class="fa-solid fa-bed"></i>';
+
+            // 如果匹配活动，图标稍微放大
+            const size = isActivityMatch ? 34 : 28;
+            
+            const customIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div class="marker-pin marker-wishlist cat-${p.cat}" style="width:${size}px;height:${size}px;font-size:${size/2}px;opacity:${finalOpacity}">${iconHtml}</div>`,
+                iconSize: [size, size],
+                iconAnchor: [size/2, size/2]
+            });
+            marker = L.marker([p.lat, p.lng], { icon: customIcon });
+
+        } else {
+            // 普通点
+            let color = categoryColors[p.cat] || '#3494a6';
+            
+            marker = L.circleMarker([p.lat, p.lng], {
+                radius: radius, 
+                fillColor: color, 
+                color: '#fff', 
+                weight: 1, 
+                fillOpacity: finalOpacity,
+                opacity: finalOpacity
+            });
+        }
+        
+        marker.bindPopup(createPopupContent(p, isWishlisted), {
+            maxWidth: 400, minWidth: 300, className: 'custom-popup-wrapper'
+        });
+
+        marker.on('click', function() {
+            map.flyTo([p.lat, p.lng], 13, { duration: 1.5 });
+            window.loadPostsForLocation(p.id, p.name);
+        });
+        
+        markers.addLayer(marker);
     });
-};
 
-// Popup HTML 生成
-function createPopupContent(poi) {
-    const icons = [
+    // 3. 更新排名图表 (只统计当前筛选出的点)
+    updateRankChart(visiblePois);
+}
+
+// ★★★ 弹窗生成函数 (更新：大弹窗、时间和电话) ★★★
+function createPopupContent(poi, isAdded) {
+    const btnClass = isAdded ? 'added' : '';
+    const btnText = isAdded ? '<i class="fa-solid fa-heart"></i> Added!' : '<i class="fa-regular fa-heart"></i> Add to Wishlist';
+    
+    const iconsConfig = [
         { class: 'fa-solid fa-wifi', title: 'WiFi' },
         { class: 'fa-solid fa-square-parking', title: 'Parking' },
         { class: 'fa-solid fa-wheelchair', title: 'Accessible' },
         { class: 'fa-solid fa-utensils', title: 'Dining' }
     ];
+    
     let facHtml = '';
     poi.fac.forEach((has, index) => {
-        const statusClass = has ? 'active' : '';
-        facHtml += `<i class="${icons[index].class} fac-item ${statusClass}"></i>`;
+        const statusClass = has === 1 ? 'active' : '';
+        facHtml += `<i class="${iconsConfig[index].class} fac-item ${statusClass}" title="${iconsConfig[index].title}"></i>`;
     });
+
+    // 电话点击事件 (简单 Alert)
+    const phoneOnClick = `alert('Telephone Number: ${poi.tel}')`;
 
     return `
         <div class="custom-popup">
             <div class="popup-left">
-                <img src="${poi.img}" class="popup-img">
-                <button class="official-link-btn">Official Link</button>
+                <img src="${poi.img}" class="popup-img" onerror="this.src='https://via.placeholder.com/120'">
+                <a href="${poi.link}" target="_blank" class="official-link-btn">Trip.com Link</a>
             </div>
             <div class="popup-right">
                 <div class="popup-top-actions">
-                    <div class="action-icon"><i class="fa-solid fa-location-arrow"></i></div>
-                    <div class="action-icon"><i class="fa-solid fa-phone"></i></div>
+                    <div class="action-icon" onclick="${phoneOnClick}" title="Click to see number">
+                        <i class="fa-solid fa-phone"></i>
+                    </div>
                 </div>
                 <div class="popup-title">${poi.name}</div>
+                
+                <div class="popup-meta-row">
+                    <span><i class="fa-solid fa-star"></i> Score: ${poi.score}</span>
+                    <span style="color:#ddd">|</span>
+                    <span><i class="fa-solid fa-sack-dollar"></i> $${poi.cost}</span>
+                </div>
+                <div class="popup-meta-row">
+                    <span><i class="fa-regular fa-clock"></i> Rec. Time: ${poi.time} h</span>
+                </div>
+
                 <div class="popup-desc">${poi.desc}</div>
                 <div class="popup-facilities">${facHtml}</div>
                 
-                <button class="popup-wishlist-btn" onclick="togglePopupWishlist(this, '${poi.name}')">
-                    <i class="fa-regular fa-heart"></i> Add to Wishlist
+                <button class="popup-wishlist-btn ${btnClass}" onclick="window.toggleWishlist(this, '${poi.id}')">
+                    ${btnText}
                 </button>
             </div>
         </div>
@@ -90,232 +301,272 @@ function createPopupContent(poi) {
 }
 
 // =========================================
-// 3. 核心：多选 Filter 与 地图渲染
+// 4. UI 交互 & 图表
 // =========================================
 
-// 使用 Set 存储当前选中的分类 (默认只有 'all')
-let activeFilters = new Set(['all']);
-
-function renderMap() {
-    markers.clearLayers();
-    
-    poiData.forEach(p => {
-        // 多选逻辑：如果是 'all' 或者当前分类在集合中，则显示
-        if (activeFilters.has('all') || activeFilters.has(p.cat)) {
-            
-            let color = '#3494a6'; // Teal
-            if (p.cat === 'Culture') color = '#1a3c5a'; // Dark Blue
-            if (p.cat === 'Food') color = '#bf4328'; // Orange
-            if (p.cat === 'Stay') color = '#e0b341'; // Yellow
-
-            const marker = L.circleMarker([p.lat, p.lng], {
-                radius: 8, fillColor: color, color: '#fff', weight: 2, fillOpacity: 1
-            });
-            
-            marker.bindPopup(createPopupContent(p), {
-                maxWidth: 320, minWidth: 320, className: 'custom-popup-wrapper'
-            });
-
-            // ★★★ 交互：点击 Marker -> 1. Zoom In 2. Filter Feed ★★★
-            marker.on('click', function() {
-                // 1. 镜头平滑拉近 (FlyTo)
-                map.flyTo([p.lat, p.lng], 12, { duration: 1.5 });
-                
-                // 2. 右侧 YUNote 联动
-                filterFeed(p.name);
-            });
-            
-            markers.addLayer(marker);
-        }
-    });
-}
-
-// 初始化渲染
-renderMap();
-
-// 绑定筛选器点击事件
+// Filter Tags 点击
 document.querySelectorAll('.tag').forEach(tag => {
     tag.addEventListener('click', (e) => {
         const selectedCat = e.target.dataset.cat;
-        
         if (selectedCat === 'all') {
-            // 点击 All -> 清空其他，只留 All
-            activeFilters.clear();
-            activeFilters.add('all');
+            activeFilters.clear(); activeFilters.add('all');
         } else {
-            // 点击具体分类 -> 先移除 All
             activeFilters.delete('all');
-            
-            // Toggle 逻辑：有则删，无则加
-            if (activeFilters.has(selectedCat)) {
-                activeFilters.delete(selectedCat);
-            } else {
-                activeFilters.add(selectedCat);
-            }
-            
-            // 兜底逻辑：如果删光了，自动回退到 All
-            if (activeFilters.size === 0) {
-                activeFilters.add('all');
-            }
+            if (activeFilters.has(selectedCat)) activeFilters.delete(selectedCat);
+            else activeFilters.add(selectedCat);
+            if (activeFilters.size === 0) activeFilters.add('all');
         }
-        
-        // 更新 UI 样式 (DOM 操作)
         document.querySelectorAll('.tag').forEach(t => {
             const cat = t.dataset.cat;
-            if (activeFilters.has(cat)) {
-                t.classList.add('active');
-            } else {
-                t.classList.remove('active');
-            }
+            t.classList.toggle('active', activeFilters.has(cat));
         });
-
-        // 重新渲染地图
+        
+        // 重新渲染地图和图表
         renderMap();
     });
 });
 
+// Month Slider
+const monthSlider = document.getElementById('monthSlider');
+const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function updateMonth(mIndex) {
+    currentMonth = mIndex + 1;
+    document.getElementById('monthDisplay').innerText = monthNames[mIndex];
+
+    // 更新左侧主题卡片
+    let themeKey = 4;
+    if (monthlyThemes[currentMonth]) themeKey = currentMonth;
+    else if ([12, 1, 2].includes(currentMonth)) themeKey = 12;
+    else if ([3, 4, 5].includes(currentMonth)) themeKey = 4;
+    else if ([6, 7, 8].includes(currentMonth)) themeKey = 7;
+    else if ([9, 10, 11].includes(currentMonth)) themeKey = 10;
+
+    const theme = monthlyThemes[themeKey];
+    document.getElementById('themeTitle').innerText = theme.title;
+    document.getElementById('themeDesc').innerText = theme.desc;
+    document.getElementById('themeImg').src = theme.img;
+
+    // 更新气温图表的高亮
+    if (tempChart) {
+        const pointColors = new Array(12).fill('rgba(191, 67, 40, 0.0)');
+        pointColors[mIndex] = '#bf4328';
+        tempChart.data.datasets[0].pointBackgroundColor = pointColors;
+        tempChart.data.datasets[0].pointRadius = pointColors.map(c => c === '#bf4328' ? 5 : 0);
+        tempChart.update();
+        document.getElementById('dispTemp').innerText = `${tempChart.data.datasets[0].data[mIndex]}°C`;
+        document.getElementById('dispRain').innerText = `${tempChart.data.datasets[1].data[mIndex]}mm`;
+    }
+    
+    // 更新地图（触发 Activity 高亮变化）
+    renderMap();
+}
+
+monthSlider.addEventListener('input', (e) => updateMonth(e.target.value - 1));
+
+// 初始化图表实例
+function initBaseCharts() {
+    // 1. Rank Chart (Pop Chart)
+    const ctxPop = document.getElementById('popChart').getContext('2d');
+    popChart = new Chart(ctxPop, {
+        type: 'bar',
+        data: { labels: [], datasets: [] }, // 初始为空，等待 updateRankChart 填充
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            indexAxis: 'y', 
+            plugins: { legend: false }, 
+            scales: { x: { display: false }, y: { grid: { display: false } } } 
+        }
+    });
+
+    // 2. Climate Chart (静态数据)
+    const ctxTemp = document.getElementById('tempChart').getContext('2d');
+    tempChart = new Chart(ctxTemp, {
+        type: 'bar',
+        data: {
+            labels: ['J','F','M','A','M','J','J','A','S','O','N','D'],
+            datasets: [
+                { type: 'line', label: 'Temp', data: [8,10,13,16,19,22,23,22,20,17,12,9], borderColor: '#bf4328', pointBackgroundColor: '#bf4328', tension: 0.4, yAxisID: 'y' },
+                { type: 'bar', label: 'Rain', data: [5,10,15,30,80,150,180,160,100,50,20,10], backgroundColor: 'rgba(52, 148, 166, 0.6)', yAxisID: 'y1' }
+            ]
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { legend: false }, 
+            scales: { x: { grid: { display: false } }, y: { display: false }, y1: { display: false } } 
+        }
+    });
+}
+
+// ★★★ 动态更新 Rank 图表 (Top 10) ★★★
+function updateRankChart(visiblePois) {
+    if (!popChart) return;
+
+    // 1. 排序：按分数降序
+    const sorted = [...visiblePois].sort((a, b) => b.score - a.score);
+    // 2. 取前10
+    const top10 = sorted.slice(0, 10);
+    
+    // 3. 生成数据和颜色
+    const labels = top10.map(p => {
+        // 名字太长截断
+        return p.name.length > 12 ? p.name.substring(0, 10) + '..' : p.name;
+    });
+    const data = top10.map(p => p.score);
+    const colors = top10.map(p => categoryColors[p.cat] || '#3494a6'); // 每个 Bar 的颜色跟随它的 Category
+
+    // 4. 更新 Chart
+    popChart.data.labels = labels;
+    popChart.data.datasets = [{
+        data: data,
+        backgroundColor: colors,
+        borderRadius: 4,
+        barPercentage: 0.7
+    }];
+    popChart.update();
+}
+
+window.resetMapView = function() {
+    map.flyTo([24.5, 101.5], 7, { duration: 1.5 });
+    window.loadAllPosts();
+};
 
 // =========================================
-// 4. YUNote & Feed 逻辑
+// 5. Yunstagram (右侧)
 // =========================================
 
 const contentArea = document.getElementById('appContentArea');
+const createPostContainer = document.getElementById('createPostContainer');
+let currentSelectedLocationId = null;
 
-function renderFeed(data) {
+window.loadPostsForLocation = function(poiId, poiName) {
+    currentSelectedLocationId = poiId;
+    updateLocationBadge(poiName, 'location');
+    fetchPosts(poiId);
+};
+
+window.loadAllPosts = function() {
+    currentSelectedLocationId = null;
+    updateLocationBadge('All Yunnan', 'globe');
+    fetchPosts(null);
+};
+
+window.loadMyPosts = function() {
+    updateLocationBadge('My Posts', 'user');
+    fetchPosts(null, true);
+};
+
+function updateLocationBadge(text, iconType) {
+    const badge = document.getElementById('currentLocationTag');
+    let icon = iconType === 'location' ? 'fa-location-dot' : (iconType === 'user' ? 'fa-user' : 'fa-globe');
+    if(badge) badge.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${text}</span>`;
+}
+
+function fetchPosts(locationId = null, onlyMine = false) {
+    contentArea.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">Loading feeds...</div>';
+    let q = collection(db, "posts");
+    let constraints = [orderBy("timestamp", "desc")];
+    if (locationId) constraints.push(where("locationId", "==", String(locationId)));
+    if (onlyMine) constraints.push(where("userId", "==", CURRENT_USER_ID));
+    
+    const finalQuery = query(q, ...constraints);
+    onSnapshot(finalQuery, (snapshot) => {
+        let posts = [];
+        snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+        renderFeedHTML(posts);
+    });
+}
+
+function renderFeedHTML(posts) {
+    if (posts.length === 0) {
+        contentArea.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">No posts found.</div>';
+        return;
+    }
     let html = '<div class="feed-container">';
-    if (data.length === 0) {
-        html += '<div style="text-align:center;color:#999;margin-top:20px;">No posts yet for this location.</div>';
-    } else {
-        data.forEach(item => {
-            html += `
-                <div class="feed-card" onclick="showPostDetail(${item.id})">
-                    <img src="${item.img}" class="feed-img">
-                    <div class="feed-info">
-                        <div class="feed-title">${item.title}</div>
-                        <div class="feed-meta">
-                            <div class="user-info">
-                                <div class="avatar"></div><span>${item.user}</span>
-                            </div>
-                            <div class="like-box"><i class="fa-regular fa-heart"></i> ${item.likes}</div>
-                        </div>
+    posts.forEach(item => {
+        html += `
+            <div class="feed-card" onclick="window.showPostDetail('${item.id}')">
+                <img src="${item.img}" class="feed-img">
+                <div class="feed-info">
+                    <div class="feed-title">${item.title}</div>
+                    <div class="feed-meta">
+                        <div class="user-info"><div class="avatar"></div><span>${item.user}</span></div>
+                        <div class="like-box"><i class="fa-regular fa-heart"></i> ${item.likes || 0}</div>
                     </div>
                 </div>
-            `;
-        });
-    }
+            </div>
+        `;
+    });
     html += '</div>';
     contentArea.innerHTML = html;
 }
-renderFeed(feedData);
 
-window.filterFeed = function(locationName) {
-    const badge = document.getElementById('currentLocationTag');
-    if(badge) badge.innerHTML = `<i class="fa-solid fa-location-dot"></i> <span>${locationName}</span>`;
-    const filtered = feedData.filter(item => item.location === locationName);
-    renderFeed(filtered);
-};
-
-window.resetFeed = function() {
-    const badge = document.getElementById('currentLocationTag');
-    if(badge) badge.innerHTML = `<i class="fa-solid fa-globe"></i> <span>All Yunnan</span>`;
-    renderFeed(feedData);
-    // 重置 Feed 的同时也重置地图，体验更好
-    resetMapView();
-};
-
-window.showPostDetail = function(id) {
-    const item = feedData.find(p => p.id === id);
-    if(!item) return;
+window.showPostDetail = async function(docId) {
+    const docRef = doc(db, "posts", docId);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return;
+    const item = { id: docSnap.id, ...docSnap.data() };
     const detailHtml = `
         <div style="padding:20px; background:white; min-height:100%;">
-            <div style="display:flex;align-items:center;margin-bottom:15px;color:#666;cursor:pointer;" onclick="renderFeed(feedData)">
-                <i class="fa-solid fa-arrow-left"></i> &nbsp; Back
-            </div>
+            <div style="display:flex;align-items:center;margin-bottom:15px;color:#666;cursor:pointer;" onclick="window.showSection('home')"><i class="fa-solid fa-arrow-left"></i> &nbsp; Back</div>
             <img src="${item.img}" style="width:100%;border-radius:12px;margin-bottom:15px;">
-            <h2 style="font-size:1.2rem;color:var(--color-dark-blue);margin-bottom:10px;">${item.title}</h2>
+            <h2 style="font-size:1.2rem;margin-bottom:10px;">${item.title}</h2>
             <div style="display:flex;gap:10px;align-items:center;margin-bottom:15px;">
                 <div class="avatar" style="width:30px;height:30px;"></div>
-                <span style="font-weight:bold;font-size:0.9rem;">${item.user}</span>
+                <span style="font-weight:bold;">${item.user}</span>
             </div>
-            <p style="color:#555;line-height:1.6;">${item.content}</p>
+            <p style="color:#555;">${item.content}</p>
         </div>
     `;
     contentArea.innerHTML = detailHtml;
 };
 
 window.showSection = function(section) {
-    let html = '';
-    if (section === 'message') html = '<div style="padding:20px;text-align:center;margin-top:50px;"><h3>Messages</h3><p>Chat feature coming soon.</p></div>';
-    else if (section === 'create') html = '<div style="padding:20px;"><h3>Create Post</h3><textarea style="width:100%;height:100px;margin-top:10px;"></textarea></div>';
-    else if (section === 'me') html = '<div style="padding:20px;"><h3>My Profile</h3><p>User: Explorer</p></div>';
-    contentArea.innerHTML = html;
-};
-
-window.togglePopupWishlist = function(btn, name) {
-    if (btn.classList.contains('added')) {
-        btn.classList.remove('added');
-        btn.innerHTML = '<i class="fa-regular fa-heart"></i> Add to Wishlist';
-    } else {
-        btn.classList.add('added');
-        btn.innerHTML = '<i class="fa-solid fa-heart"></i> Added!';
+    createPostContainer.style.display = 'none';
+    contentArea.style.display = 'block';
+    if (section === 'home') {
+        currentSelectedLocationId ? fetchPosts(currentSelectedLocationId) : window.loadAllPosts();
+    } else if (section === 'create') {
+        if (!currentSelectedLocationId) {
+            alert("Please select a location on the map first!");
+            return;
+        }
+        contentArea.style.display = 'none';
+        createPostContainer.style.display = 'flex';
+        const loc = poiData.find(p => p.id === currentSelectedLocationId);
+        document.querySelector('#createPostContainer h3').innerText = `Post to: ${loc ? loc.name : 'Unknown'}`;
+    } else if (section === 'me') {
+        window.loadMyPosts();
     }
 };
 
-// =========================================
-// 5. Chart & Slider Logic
-// =========================================
+window.submitNewPost = async function() {
+    const content = document.getElementById('newPostContent').value;
+    if (!content) return alert("Write something!");
+    try {
+        const loc = poiData.find(p => p.id === currentSelectedLocationId);
+        await addDoc(collection(db, "posts"), {
+            title: "Travel Memory",
+            content: content,
+            locationId: String(currentSelectedLocationId),
+            locationName: loc ? loc.name : "Unknown",
+            userId: CURRENT_USER_ID,
+            user: "Explorer",
+            likes: 0,
+            img: "https://images.unsplash.com/photo-1504280590459-f2f293b9e597?q=80&w=2070", 
+            timestamp: Timestamp.now()
+        });
+        document.getElementById('newPostContent').value = '';
+        window.showSection('home');
+    } catch (e) { alert("Failed to post: " + e.message); }
+};
 
-const monthSlider = document.getElementById('monthSlider');
-const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+window.resetFeed = function() {
+    window.loadAllPosts();
+    window.resetMapView();
+};
 
-// Chart: Popularity
-const ctxPop = document.getElementById('popChart').getContext('2d');
-const popChart = new Chart(ctxPop, {
-    type: 'bar',
-    data: {
-        labels: poiData.map(p => p.name.substring(0, 8) + '..'),
-        datasets: [{ data: poiData.map(p => p.score), backgroundColor: '#1a3c5a', borderRadius: 4 }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: false }, scales: { x: { display: false }, y: { grid: { display: false } } } }
-});
-
-// Chart: Climate
-const ctxTemp = document.getElementById('tempChart').getContext('2d');
-const tempChart = new Chart(ctxTemp, {
-    type: 'bar',
-    data: {
-        labels: ['J','F','M','A','M','J','J','A','S','O','N','D'],
-        datasets: [
-            { type: 'line', label: 'Temp', data: [8,10,13,16,19,22,23,22,20,17,12,9], borderColor: '#bf4328', pointBackgroundColor: '#bf4328', tension: 0.4, yAxisID: 'y' },
-            { type: 'bar', label: 'Rain', data: [5,10,15,30,80,150,180,160,100,50,20,10], backgroundColor: 'rgba(52, 148, 166, 0.6)', yAxisID: 'y1' }
-        ]
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: false }, scales: { x: { grid: { display: false } }, y: { display: false }, y1: { display: false } } }
-});
-
-function updateMonth(mIndex) {
-    document.getElementById('monthDisplay').innerText = monthNames[mIndex];
-    const monthKey = mIndex + 1;
-    const theme = monthlyThemes[monthKey] || monthlyThemes[1];
-    document.getElementById('themeTitle').innerText = theme.title;
-    document.getElementById('themeDesc').innerText = theme.desc;
-    document.getElementById('themeImg').src = theme.img;
-
-    const pointColors = new Array(12).fill('rgba(191, 67, 40, 0.0)');
-    pointColors[mIndex] = '#bf4328';
-    tempChart.data.datasets[0].pointBackgroundColor = pointColors;
-    tempChart.data.datasets[0].pointRadius = pointColors.map(c => c === '#bf4328' ? 5 : 0);
-
-    // ★★★ 实时更新左侧气温/降水数值 ★★★
-    if (tempChart.data.datasets.length >= 2) {
-        const tEl = document.getElementById('dispTemp');
-        const rEl = document.getElementById('dispRain');
-        // 防止页面刚加载 DOM 还没出来时报错
-        if(tEl) tEl.innerText = `${tempChart.data.datasets[0].data[mIndex]}°C`;
-        if(rEl) rEl.innerText = `${tempChart.data.datasets[1].data[mIndex]}mm`;
-    }
-    tempChart.update();
-}
-
-monthSlider.addEventListener('input', (e) => updateMonth(e.target.value - 1));
-updateMonth(6);
+// 启动应用
+initApp();

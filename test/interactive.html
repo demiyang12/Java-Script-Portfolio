@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Oswald:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="css/interactive.css">
 </head>
@@ -17,7 +17,7 @@
 
     <header class="main-header">
         <div class="logo">
-            <i class="fa-solid fa-mountain-sun" style="margin-right:12px; color:var(--color-yellow)"></i>
+            <i class="fa-solid fa-mountain-sun" style="margin-right:12px; color:var(--color-action-gold)"></i>
             Yunnan Odyssey
         </div>
         <div class="user-profile-icon">
@@ -25,11 +25,17 @@
         </div>
     </header>
 
-    <div id="map"></div>
+    <div id="map-wrapper" style="position: relative; height: calc(100vh - 60px);">
+        <div id="map"></div>
+        
+        <a href="dashboard.html" class="back-btn">
+            <i class="fa-solid fa-arrow-left"></i> Back to Exploration
+        </a>
+    </div>
 
     <div class="sidebar-panel">
         
-        <div class="sidebar-dark-header">
+        <div class="sidebar-colored-header">
             <div class="stats-row">
                 <div class="stat-group">
                     <label>TOTAL COST</label>
@@ -41,56 +47,37 @@
                 </div>
                 <div class="budget-group">
                     <label>BUDGET ($)</label>
-                    <input type="number" id="budgetInput" placeholder="Limit" value="2000">
+                    <input type="number" id="budgetInput" placeholder="Limit" value="10">
                 </div>
             </div>
 
             <div class="date-row">
-                <div class="date-input-group">
-                    <span>From</span>
-                    <input type="date" id="dateFrom" value="2025-12-17">
+                <div class="date-inputs-wrapper">
+                    <div class="date-input-group">
+                        <span>From</span>
+                        <input type="date" id="dateFrom" value="2025-12-18">
+                    </div>
+                    <div class="date-input-group">
+                        <span>To</span>
+                        <input type="date" id="dateTo" value="2025-12-23">
+                    </div>
                 </div>
-                <div class="date-input-group">
-                    <span>To</span>
-                    <input type="date" id="dateTo" value="2025-12-22">
-                </div>
-                <div class="days-badge" id="totalDaysDisplay">6 Days</div>
+                <div class="days-badge" id="totalDaysDisplay">-- Days</div>
             </div>
         </div>
 
         <div class="sidebar-body" id="daysContainer">
-            <div class="day-section">
-                <div class="day-title">DAY 1: THE START</div>
-                <ul class="waypoint-list" id="day1" data-day="1">
-                    <li class="empty-state">Select spots from map...</li>
-                </ul>
             </div>
-            
-            <div class="day-section">
-                <div class="day-title">DAY 2: THE ADVENTURE</div>
-                <ul class="waypoint-list" id="day2" data-day="2">
-                    <li class="empty-state">Drag items here...</li>
-                </ul>
-            </div>
-
-             <div class="day-section">
-                <div class="day-title">DAY 3: THE HISTORY</div>
-                <ul class="waypoint-list" id="day3" data-day="3">
-                    <li class="empty-state">Drag items here...</li>
-                </ul>
-            </div>
-        </div>
 
         <div class="sidebar-footer">
-            <button class="btn-add-day" onclick="addNewDay()">+ Add Day</button>
-            <button class="btn-save" onclick="alert('Tour Saved!')">Save Tour</button>
+            <button class="btn-add-day" id="btnAddDay">+ Add Day</button>
+            <button class="btn-save" onclick="alert('Tour Saved successfully!')">Save Tour</button>
         </div>
     </div>
 
     <div class="bottom-panel">
         <div class="chart-header">
-            <span>Elevation / Experience Profile</span>
-            <button class="close-chart" onclick="toggleChart()">×</button>
+            <span>Elevation Profile</span>
         </div>
         <div class="chart-container">
             <canvas id="elevationChart"></canvas>
@@ -100,6 +87,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="js/interactive.js"></script>
+    <script type="module" src="js/interactive.js"></script>
 </body>
 </html>
