@@ -1,95 +1,144 @@
-body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; height: 100vh; width: 100vw; }
+/* 全局变量 */
+:root {
+    --color-dark-header: #2c3e50; /* 图二的深色背景 */
+    --color-green: #4cd137;       /* 亮绿色高亮 */
+    --color-red: #e74c3c;         /* 警告红 */
+    --color-text-main: #333;
+}
 
-/* 1. 地图全屏 */
-#map { position: absolute; top: 0; bottom: 0; right: 0; left: 0; z-index: 0; }
+body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; height: 100vh; width: 100vw; overflow: hidden; background: #f0f2f5; }
 
-/* 2. 左侧悬浮栏 */
-.sidebar-float {
-    position: absolute;
-    top: 20px; left: 20px; bottom: 180px; /* 留出底部图表空间 */
+/* 1. Main Header */
+.main-header {
+    height: 50px; background: #1a1a1a; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 100; position: relative;
+}
+.logo { font-family: 'Cinzel Decorative', cursive; color: white; font-size: 1.2rem; display: flex; align-items: center; }
+.avatar-small { width: 28px; height: 28px; border-radius: 50%; background: #555; }
+
+/* 2. Map */
+#map { position: absolute; top: 50px; bottom: 0; left: 0; right: 0; z-index: 0; }
+
+/* Markers */
+.custom-div-icon { background: transparent; border: none; }
+.marker-pin {
+    width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border: 2px solid white; transition: 0.2s;
+}
+.marker-pin:hover { transform: scale(1.15); }
+/* 灰色点 (默认) */
+.marker-gray { background: #95a5a6; }
+/* 彩色点 (Wishlist) */
+.marker-wishlist { background: var(--color-green); } /* 默认绿 */
+.marker-wishlist.cat-Culture { background: #2980b9; }
+.marker-wishlist.cat-Food { background: #d35400; }
+
+/* 3. Sidebar (Panel Style) */
+.sidebar-panel {
+    position: absolute; top: 70px; right: 20px; bottom: 170px; /* 留出底部图表空间 */
     width: 360px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transition: transform 0.3s ease;
+    background: white; border-radius: 12px;
+    display: flex; flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    overflow: hidden; z-index: 1000;
 }
 
-.sidebar-header {
-    padding: 20px;
-    background: #2f3640;
+/* A. Dark Header Area */
+.sidebar-dark-header {
+    background: var(--color-dark-header);
+    padding: 15px;
     color: white;
+    flex-shrink: 0;
 }
-.sidebar-header h1 { margin: 0 0 15px 0; font-size: 18px; font-weight: 600; }
 
-.stats-row { display: flex; gap: 20px; }
-.stat-item { display: flex; flex-direction: column; }
-.stat-item .label { font-size: 11px; text-transform: uppercase; color: #7f8fa6; margin-bottom: 2px; }
-.stat-item .value { font-size: 20px; font-weight: bold; color: #4cd137; }
+/* Stats Row */
+.stats-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
+.stat-group label { font-size: 0.7rem; color: #95a5a6; font-weight: bold; letter-spacing: 1px; display: block; margin-bottom: 2px; }
+.cost-value { font-size: 1.6rem; font-weight: 800; color: var(--color-green); font-family: 'Oswald', sans-serif; }
+.stops-value { font-size: 1.6rem; font-weight: 800; color: var(--color-green); font-family: 'Oswald', sans-serif; }
 
-.days-container { flex: 1; overflow-y: auto; padding: 15px; }
+/* ★★★ 超预算样式 ★★★ */
+.cost-value.over-budget { color: var(--color-red) !important; animation: shake 0.5s; }
+@keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } 100% { transform: translateX(0); } }
 
-.day-card { margin-bottom: 20px; }
-.day-title { font-size: 12px; font-weight: bold; color: #718093; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+/* Budget Input */
+.budget-group { text-align: right; }
+.budget-group input {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    color: white; padding: 4px; border-radius: 4px; width: 80px; text-align: right; font-weight: bold;
+}
 
-.waypoint-list { list-style: none; padding: 0; margin: 0; min-height: 40px; border: 1px dashed #dcdde1; border-radius: 8px; }
-.empty-state { padding: 10px; font-size: 13px; color: #b2bec3; text-align: center; font-style: italic; pointer-events: none; }
+/* Date Row */
+.date-row { 
+    display: flex; align-items: center; gap: 8px; 
+    background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; 
+}
+.date-input-group { display: flex; flex-direction: column; flex: 1; }
+.date-input-group span { font-size: 0.65rem; color: #aaa; }
+.date-input-group input { 
+    background: transparent; border: none; color: white; font-family: inherit; font-size: 0.85rem; padding: 0; cursor: pointer;
+}
+/* 去掉日历图标的默认样式，让它更好看 */
+.date-input-group input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; cursor: pointer; }
 
-/* 列表项样式 */
+.days-badge {
+    background: var(--color-green); color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;
+}
+
+/* B. Body Area */
+.sidebar-body { flex: 1; overflow-y: auto; padding: 15px; background: #fdfdfd; }
+.day-section { margin-bottom: 20px; }
+.day-title { 
+    font-size: 0.8rem; font-weight: 800; color: #7f8c8d; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;
+}
+
+.waypoint-list { list-style: none; padding: 0; margin: 0; min-height: 40px; border: 1px dashed #e0e0e0; border-radius: 6px; }
+
+/* Trip Item (仿图样式：左侧绿条) */
 .trip-item {
-    background: white;
-    padding: 12px;
-    margin: 5px;
-    border-radius: 6px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    background: white; padding: 12px; margin: 8px 0;
+    border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border: 1px solid #eee;
+    /* ★★★ 关键：左侧绿条 ★★★ */
+    border-left: 5px solid var(--color-green);
+    display: flex; justify-content: space-between; align-items: center;
     cursor: grab;
-    border-left: 4px solid #4cd137; /* Komoot Green */
 }
-.trip-item:active { cursor: grabbing; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-.item-name { font-weight: 500; font-size: 14px; color: #2f3640; }
-.item-tag { font-size: 11px; background: #f5f6fa; padding: 2px 6px; border-radius: 4px; color: #718093; }
+.trip-item:active { cursor: grabbing; }
+.item-info { display: flex; flex-direction: column; }
+.item-name { font-weight: 600; color: #333; font-size: 0.95rem; }
+.item-meta { font-size: 0.75rem; color: #888; margin-top: 2px; }
+.item-price { background: #eee; padding: 2px 5px; border-radius: 3px; font-weight: bold; color: #555; }
+.item-remove { color: #ccc; cursor: pointer; padding: 5px; }
+.item-remove:hover { color: var(--color-red); }
+
+/* C. Footer */
+.sidebar-footer {
+    padding: 15px; background: white; border-top: 1px solid #eee;
+    display: flex; gap: 10px;
+}
+.btn-add-day {
+    flex: 1; padding: 10px; background: white; border: 2px dashed #bdc3c7; color: #7f8c8d;
+    border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;
+}
+.btn-add-day:hover { border-color: var(--color-green); color: var(--color-green); }
 
 .btn-save {
-    margin: 15px;
-    padding: 12px;
-    background: #4cd137;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background 0.2s;
+    flex: 1; padding: 10px; background: var(--color-green); border: none; color: white;
+    border-radius: 6px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(76, 209, 55, 0.3);
 }
 .btn-save:hover { background: #44bd32; }
 
-/* 3. 底部图表栏 */
+/* Bottom Chart */
 .bottom-panel {
-    position: absolute;
-    bottom: 20px; left: 400px; right: 20px; /* 避开侧边栏 */
-    height: 140px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 12px;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
-    z-index: 1000;
-    padding: 10px 20px;
-    display: flex;
-    flex-direction: column;
+    position: absolute; bottom: 20px; left: 20px; right: 400px;
+    height: 130px; background: rgba(255,255,255,0.95); border-radius: 12px;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.1); padding: 10px 20px; display: flex; flex-direction: column; z-index: 900;
 }
+.chart-header { display: flex; justify-content: space-between; font-size: 11px; color: #999; font-weight: bold; text-transform: uppercase; }
+.close-chart { border: none; background: none; font-size: 16px; cursor: pointer; color: #999; }
+.chart-container { flex: 1; width: 100%; }
 
-.chart-header { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #718093; margin-bottom: 5px; }
-.chart-container { flex: 1; position: relative; width: 100%; }
-
-/* 添加按钮样式 (Popup内) */
 .popup-btn {
-    background: #4cd137; color: white; border: none; padding: 6px 12px;
-    border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 8px;
+    width: 100%; background: var(--color-dark-header); color: white; border: none;
+    padding: 6px; margin-top: 5px; border-radius: 4px; cursor: pointer; font-weight: bold;
 }

@@ -2,53 +2,89 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Yunnan Planner - Komoot Style</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yunnan Odyssey - Planner</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Oswald:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/interactive.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
+    <header class="main-header">
+        <div class="logo">
+            <i class="fa-solid fa-mountain-sun" style="margin-right:12px; color:#e0b341"></i>
+            Yunnan Odyssey
+        </div>
+        <div class="avatar-small"></div>
+    </header>
+
     <div id="map"></div>
 
-    <div class="sidebar-float">
-        <div class="sidebar-header">
-            <h1><i class="fa-solid fa-mountain-sun"></i> Yunnan Odyssey</h1>
+    <div class="sidebar-panel">
+        
+        <div class="sidebar-dark-header">
             <div class="stats-row">
-                <div class="stat-item">
-                    <span class="label">Total Cost</span>
-                    <span class="value" id="totalCost">$0</span>
+                <div class="stat-group">
+                    <label>TOTAL COST</label>
+                    <div class="cost-value" id="totalCostDisplay">$0</div>
                 </div>
-                <div class="stat-item">
-                    <span class="label">Stops</span>
-                    <span class="value" id="totalStops">0</span>
+                <div class="stat-group">
+                    <label>STOPS</label>
+                    <div class="stops-value" id="totalStopsDisplay">0</div>
                 </div>
+                <div class="budget-group">
+                    <label>BUDGET ($)</label>
+                    <input type="number" id="budgetInput" placeholder="Set Limit" value="2000">
+                </div>
+            </div>
+
+            <div class="date-row">
+                <div class="date-input-group">
+                    <span>From</span>
+                    <input type="date" id="dateFrom" value="2023-10-01">
+                </div>
+                <div class="date-input-group">
+                    <span>To</span>
+                    <input type="date" id="dateTo" value="2023-10-04">
+                </div>
+                <div class="days-badge" id="totalDaysDisplay">3 Days</div>
             </div>
         </div>
 
-        <div class="days-container">
-            <div class="day-card">
-                <div class="day-title">Day 1: The Start</div>
+        <div class="sidebar-body" id="daysContainer">
+            <div class="day-section">
+                <div class="day-title">DAY 1: THE START</div>
                 <ul class="waypoint-list" id="day1" data-day="1">
                     <li class="empty-state">Select spots from map...</li>
                 </ul>
             </div>
             
-            <div class="day-card">
-                <div class="day-title">Day 2: The Adventure</div>
+            <div class="day-section">
+                <div class="day-title">DAY 2: THE ADVENTURE</div>
                 <ul class="waypoint-list" id="day2" data-day="2">
+                    <li class="empty-state">Drag items here...</li>
+                </ul>
+            </div>
+
+             <div class="day-section">
+                <div class="day-title">DAY 3: THE HISTORY</div>
+                <ul class="waypoint-list" id="day3" data-day="3">
                     <li class="empty-state">Drag items here...</li>
                 </ul>
             </div>
         </div>
 
-        <button class="btn-save" onclick="alert('Route saved!')">Save Tour</button>
+        <div class="sidebar-footer">
+            <button class="btn-add-day" onclick="addNewDay()">+ Add Day</button>
+            <button class="btn-save" onclick="alert('Tour Saved!')">Save Tour</button>
+        </div>
     </div>
 
     <div class="bottom-panel">
         <div class="chart-header">
             <span>Elevation / Experience Profile</span>
-            <button class="close-chart">×</button>
+            <button class="close-chart" onclick="toggleChart()">×</button>
         </div>
         <div class="chart-container">
             <canvas id="elevationChart"></canvas>

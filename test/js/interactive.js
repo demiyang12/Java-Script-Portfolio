@@ -1,198 +1,218 @@
-// 1. 数据源：增加了 elevation (海拔) 模拟数据
-const locations = [
-    { id: 1, name: "Dali Ancient City", price: 0, ele: 1975, coords: [25.69, 100.16] },
-    { id: 2, name: "Three Pagodas", price: 18, ele: 2000, coords: [25.71, 100.14] },
-    { id: 3, name: "Erhai Lake", price: 25, ele: 1972, coords: [25.75, 100.20] },
-    { id: 4, name: "Shaxi Old Town", price: 0, ele: 2100, coords: [26.32, 99.85] },
-    { id: 5, name: "Lijiang Old Town", price: 12, ele: 2400, coords: [26.87, 100.23] },
-    { id: 6, name: "Blue Moon Valley", price: 10, ele: 2800, coords: [27.11, 100.22] },
-    { id: 7, name: "Jade Dragon Snow Mtn", price: 40, ele: 4506, coords: [27.09, 100.20] },
-    { id: 8, name: "Tiger Leaping Gorge", price: 15, ele: 1800, coords: [27.21, 100.13] },
-    { id: 9, name: "Shangri-La", price: 0, ele: 3160, coords: [27.82, 99.70] }
+// 1. 数据配置 (模拟)
+// isWishlist: true -> 彩色 (Wishlist), false -> 灰色 (Others)
+const poiData = [
+    { id: 1, name: "Jade Dragon Snow Mtn", lat: 27.09, lng: 100.20, price: 40, ele: 4600, cat: "Nature", isWishlist: true }, 
+    { id: 2, name: "Lijiang Old Town", lat: 26.87, lng: 100.23, price: 12, ele: 2400, cat: "Culture", isWishlist: true },
+    { id: 3, name: "Shangri-La", lat: 27.82, lng: 99.70, price: 0, ele: 3160, cat: "Culture", isWishlist: true },
+    { id: 4, name: "Shaxi Old Town", lat: 26.32, lng: 99.85, price: 0, ele: 2100, cat: "Culture", isWishlist: false },
+    { id: 5, name: "Tiger Leaping Gorge", lat: 27.21, lng: 100.13, price: 15, ele: 1800, cat: "Nature", isWishlist: true },
+    { id: 6, name: "Wild Yak Hotpot", lat: 27.80, lng: 99.72, price: 30, ele: 3200, cat: "Food", isWishlist: false },
+    { id: 7, name: "Erhai Lake", lat: 25.69, lng: 100.16, price: 0, ele: 1972, cat: "Nature", isWishlist: false }
 ];
 
-// 2. 初始化地图 (Komoot 风格底图通常比较干净)
+// 2. 初始化地图
 const map = L.map('map', { zoomControl: false }).setView([26.8, 100.2], 8);
-L.control.zoom({ position: 'topright' }).addTo(map);
+L.control.zoom({ position: 'topleft' }).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-// 使用 CartoDB Voyager (更像 Komoot 的明亮风格)
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap &copy; CARTO'
-}).addTo(map);
-
-// 3. 变量存储
 let routeLayer = L.layerGroup().addTo(map);
-let addedPoints = []; // 存储已添加到行程的点对象
-let focusMarker = null; // 用于图表联动的高亮光标
 
-// 4. 渲染地图 Marker
-locations.forEach(loc => {
-    const marker = L.marker(loc.coords).addTo(map);
+// 3. 渲染 Marker (灰 vs 彩)
+poiData.forEach(p => {
+    let cssClass = 'marker-gray';
+    let iconHtml = '<i class="fa-solid fa-location-dot"></i>';
     
-    // 自定义 Popup
-    const popupContent = `
-        <div style="font-family:sans-serif;">
-            <h3 style="margin:0 0 5px 0;">${loc.name}</h3>
-            <div style="color:#666; font-size:12px; margin-bottom:5px;">
-                Elevation: ${loc.ele}m <br> Cost: $${loc.price}
-            </div>
-            <button class="popup-btn" onclick="addPoint(${loc.id})">
-                Add to Tour
-            </button>
+    // 如果在 Wishlist 中，给彩色
+    if (p.isWishlist) {
+        cssClass = `marker-wishlist cat-${p.cat}`; 
+        if(p.cat === 'Nature') iconHtml = '<i class="fa-solid fa-mountain"></i>';
+        if(p.cat === 'Culture') iconHtml = '<i class="fa-solid fa-landmark"></i>';
+        if(p.cat === 'Food') iconHtml = '<i class="fa-solid fa-utensils"></i>';
+    }
+
+    const icon = L.divIcon({
+        className: 'custom-div-icon',
+        html: `<div class="marker-pin ${cssClass}">${iconHtml}</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+    });
+
+    const marker = L.marker([p.lat, p.lng], { icon: icon }).addTo(map);
+
+    const popupHtml = `
+        <div style="text-align:center">
+            <b>${p.name}</b><br>
+            <span style="font-size:12px;color:#666">Ele: ${p.ele}m | Cost: $${p.price}</span><br>
+            <button class="popup-btn" onclick="addToPlan(${p.id})">+ Add to Day 1</button>
         </div>
     `;
-    marker.bindPopup(popupContent);
+    marker.bindPopup(popupHtml);
 });
 
-// 5. 核心逻辑：添加点到侧边栏
-window.addPoint = function(id) {
-    const loc = locations.find(l => l.id === id);
-    if (!loc) return;
+// 4. 日期计算逻辑
+const dateFrom = document.getElementById('dateFrom');
+const dateTo = document.getElementById('dateTo');
+const totalDaysDisplay = document.getElementById('totalDaysDisplay');
 
-    // 添加到数据数组
-    addedPoints.push(loc);
+function updateDays() {
+    const d1 = new Date(dateFrom.value);
+    const d2 = new Date(dateTo.value);
+    
+    if(d1 && d2 && d2 >= d1) {
+        const diffTime = Math.abs(d2 - d1);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+        totalDaysDisplay.innerText = diffDays + " Days";
+    } else {
+        totalDaysDisplay.innerText = "--";
+    }
+}
+dateFrom.addEventListener('change', updateDays);
+dateTo.addEventListener('change', updateDays);
+updateDays(); // Init
 
-    // 渲染 UI 列表
+// 5. 添加地点逻辑
+window.addToPlan = function(id) {
+    const p = poiData.find(x => x.id === id);
+    if (!p) return;
+
+    const list = document.getElementById('day1'); // 默认加到 Day 1
+    // 移除空状态提示
+    const empty = list.querySelector('.empty-state');
+    if (empty) empty.style.display = 'none';
+
     const li = document.createElement('li');
     li.className = 'trip-item';
-    li.setAttribute('data-id', loc.id);
+    li.dataset.lat = p.lat;
+    li.dataset.lng = p.lng;
+    li.dataset.ele = p.ele;
+    li.dataset.price = p.price;
+    li.dataset.name = p.name;
+    
     li.innerHTML = `
-        <span class="item-name">${loc.name}</span>
-        <span class="item-tag">${loc.ele}m</span>
+        <div class="item-info">
+            <span class="item-name">${p.name}</span>
+            <span class="item-meta">${p.ele}m</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <span class="item-price">$${p.price}</span>
+            <i class="fa-solid fa-xmark item-remove" onclick="removePoint(this)"></i>
+        </div>
     `;
-    
-    // 简单的逻辑：前3个点去 Day 1，后面去 Day 2 (仅作演示)
-    const targetList = addedPoints.length <= 3 ? document.getElementById('day1') : document.getElementById('day2');
-    
-    // 移除 empty state
-    const emptyState = targetList.querySelector('.empty-state');
-    if(emptyState) emptyState.style.display = 'none';
-    
-    targetList.appendChild(li);
 
+    list.appendChild(li);
     map.closePopup();
-    updateApp();
+    updateGlobalState(true); // true 代表是新添加的操作
 };
 
-// 6. 更新应用状态 (路线、统计、图表)
-function updateApp() {
-    updateRoute();
-    updateStats();
-    updateChart();
+window.removePoint = function(el) {
+    el.closest('li').remove();
+    updateGlobalState(false);
+};
+
+// 6. 新增 Add Day 功能
+let dayCount = 3;
+window.addNewDay = function() {
+    dayCount++;
+    const container = document.getElementById('daysContainer');
+    
+    const div = document.createElement('div');
+    div.className = 'day-section';
+    div.innerHTML = `
+        <div class="day-title">DAY ${dayCount}: NEW ADVENTURE</div>
+        <ul class="waypoint-list" id="day${dayCount}">
+            <li class="empty-state">Drag items here...</li>
+        </ul>
+    `;
+    container.appendChild(div);
+    
+    // 初始化拖拽
+    new Sortable(document.getElementById(`day${dayCount}`), {
+        group: 'shared', animation: 150, onEnd: () => updateGlobalState(false)
+    });
+};
+
+// 7. 拖拽初始化
+['day1', 'day2', 'day3'].forEach(id => {
+    new Sortable(document.getElementById(id), {
+        group: 'shared', animation: 150, onEnd: () => updateGlobalState(false)
+    });
+});
+
+// 8. 全局状态更新 (Budget & Route & Chart)
+function updateGlobalState(isNewAdd) {
+    let totalCost = 0;
+    let points = [];
+    
+    // 遍历所有点
+    document.querySelectorAll('.trip-item').forEach(item => {
+        const price = parseInt(item.dataset.price);
+        totalCost += price;
+        points.push({
+            lat: parseFloat(item.dataset.lat),
+            lng: parseFloat(item.dataset.lng),
+            ele: parseInt(item.dataset.ele),
+            name: item.dataset.name
+        });
+    });
+
+    // Update Text
+    const costEl = document.getElementById('totalCostDisplay');
+    costEl.innerText = `$${totalCost}`;
+    document.getElementById('totalStopsDisplay').innerText = points.length;
+
+    // ★★★ 预算逻辑 ★★★
+    const budgetLimit = parseInt(document.getElementById('budgetInput').value) || 0;
+    
+    if (totalCost > budgetLimit) {
+        costEl.classList.add('over-budget'); // 变红
+        // 只有在新增操作导致超支时弹窗，防止拖拽时频繁弹窗
+        if (isNewAdd) {
+            alert(`⚠️ WARNING: Over Budget!\nCurrent: $${totalCost}\nLimit: $${budgetLimit}`);
+        }
+    } else {
+        costEl.classList.remove('over-budget');
+    }
+
+    // Update Map Route
+    updateRoute(points);
+    
+    // Update Chart
+    updateChart(points);
 }
 
-function updateRoute() {
+// 监听预算输入框变化
+document.getElementById('budgetInput').addEventListener('input', () => updateGlobalState(false));
+
+function updateRoute(points) {
     routeLayer.clearLayers();
-    if (addedPoints.length < 2) return;
-
-    const latlngs = addedPoints.map(p => p.coords);
-    
-    // 画线 (模拟 Komoot 的路径样式)
-    L.polyline(latlngs, {
-        color: '#4cd137', // Komoot Green
-        weight: 5,
-        opacity: 0.8,
-        lineJoin: 'round'
-    }).addTo(routeLayer);
-
-    // 调整视野
-    map.fitBounds(L.latLngBounds(latlngs), { padding: [100, 100] });
+    if(points.length < 2) return;
+    const latlngs = points.map(p => [p.lat, p.lng]);
+    L.polyline(latlngs, { color: '#4cd137', weight: 4 }).addTo(routeLayer);
 }
 
-function updateStats() {
-    const totalCost = addedPoints.reduce((sum, p) => sum + p.price, 0);
-    document.getElementById('totalCost').innerText = `$${totalCost}`;
-    document.getElementById('totalStops').innerText = addedPoints.length;
-}
-
-// 7. 图表与联动 (Komoot 的灵魂)
-let elevationChart = null;
-
-function updateChart() {
+// Chart
+let myChart = null;
+function updateChart(points) {
     const ctx = document.getElementById('elevationChart').getContext('2d');
+    if (myChart) myChart.destroy();
     
-    // 准备数据
-    const labels = addedPoints.map((p, i) => `Stop ${i+1}`);
-    const dataElev = addedPoints.map(p => p.ele);
-
-    if (elevationChart) elevationChart.destroy();
-
-    elevationChart = new Chart(ctx, {
+    const labels = points.map(p => p.name);
+    const data = points.map(p => p.ele);
+    
+    myChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Elevation (m)',
-                data: dataElev,
-                borderColor: '#4cd137',
-                backgroundColor: 'rgba(76, 209, 55, 0.1)',
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-                pointHoverRadius: 6
+                label: 'Elevation (m)', data: data,
+                borderColor: '#4cd137', backgroundColor: 'rgba(76, 209, 55, 0.2)',
+                fill: true, tension: 0.4
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
-            plugins: {
-                tooltip: { enabled: true },
-                legend: { display: false }
-            },
-            scales: {
-                y: { display: true, beginAtZero: false },
-                x: { display: false } // 隐藏 X 轴标签以保持简洁
-            },
-            // --- 关键交互：鼠标在图表上移动 ---
-            onHover: (event, elements) => {
-                if (elements && elements.length > 0) {
-                    const index = elements[0].index;
-                    const point = addedPoints[index];
-                    highlightOnMap(point.coords);
-                } else {
-                    removeHighlight();
-                }
-            }
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: false },
+            scales: { x: { display: false }, y: { display: true } }
         }
     });
 }
-
-// 8. 图表 -> 地图 联动实现
-function highlightOnMap(coords) {
-    if (focusMarker) {
-        focusMarker.setLatLng(coords);
-    } else {
-        // 创建一个蓝色的光晕 Marker
-        const icon = L.divIcon({
-            className: 'focus-icon',
-            html: '<div style="width:16px;height:16px;background:#2980b9;border:3px solid white;border-radius:50%;box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>',
-            iconSize: [22, 22],
-            iconAnchor: [11, 11]
-        });
-        focusMarker = L.marker(coords, { icon: icon, zIndexOffset: 1000 }).addTo(map);
-    }
-}
-
-function removeHighlight() {
-    if (focusMarker) {
-        map.removeLayer(focusMarker);
-        focusMarker = null;
-    }
-}
-
-// 9. 拖拽排序初始化
-['day1', 'day2'].forEach(id => {
-    new Sortable(document.getElementById(id), {
-        group: 'shared',
-        animation: 150,
-        onEnd: () => {
-            // 这里需要复杂的逻辑重组 addedPoints 数组
-            // 为简化演示，这里仅提示。在真实项目中，需要根据 DOM 顺序重新 map 数据。
-            console.log("Reordering logic needs to be implemented based on DOM");
-        }
-    });
-});

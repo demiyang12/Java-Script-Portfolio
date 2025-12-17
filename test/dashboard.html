@@ -2,61 +2,127 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Market Intelligence - Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Yunnan Odyssey</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Oswald:wght@500&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="css/dashboard.css">
 </head>
 <body>
+    
     <header>
-        <h2>Market Intelligence</h2>
-        <div class="kpi-group">
-            <div class="kpi">Avg Daily Cost: <span>$55</span></div>
-            <div class="kpi">Best Weather: <span>Oct-Nov</span></div>
-            <div class="kpi">Total POIs: <span>42</span></div>
+        <div class="logo">
+            <i class="fa-solid fa-mountain-sun" style="margin-right:12px; color:var(--color-yellow)"></i>
+            Yunnan Odyssey
+        </div>
+        <div class="user-profile-icon">
+            <div class="avatar-small"></div>
         </div>
     </header>
 
-    <div class="main-content">
-        <div class="bento-card filters">
-            <h3>Filter by Interest</h3>
-            <div class="tag-cloud" id="tagCloud">
-                <div class="tag active" data-cat="all">All</div>
-                <div class="tag" data-cat="Nature">Nature</div>
-                <div class="tag" data-cat="Culture">Culture</div>
-                <div class="tag" data-cat="Food">Food</div>
+    <div class="main-grid">
+        
+        <aside class="left-panel">
+            
+            <div class="panel-card theme-card">
+                <h3>Month Highlight</h3>
+                <div class="theme-content">
+                    <img id="themeImg" src="" alt="Theme">
+                    <div class="theme-text">
+                        <h4 id="themeTitle">Loading...</h4>
+                        <p id="themeDesc">...</p>
+                    </div>
+                </div>
             </div>
 
-            <h3>Travel Month</h3>
-            <div class="slider-container">
-                <input type="range" min="1" max="12" value="4" id="monthSlider" style="width:100%">
-                <p>Selected: <span id="monthDisplay">April</span></p>
+            <div class="panel-card chart-card">
+                <h3>Popularity Rank</h3>
+                <div class="chart-wrapper small-chart"><canvas id="popChart"></canvas></div>
             </div>
-            <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">
-                *Month affects precipitation chart and budget estimates.
-            </p>
-        </div>
+            
+            <div class="panel-card chart-card">
+                <h3>Climate Info</h3>
+                <div class="climate-stats-row">
+                    <div class="stat-box">
+                        <i class="fa-solid fa-temperature-half" style="color:var(--color-orange)"></i>
+                        <span id="dispTemp">--°C</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-box">
+                        <i class="fa-solid fa-cloud-rain" style="color:var(--color-teal)"></i>
+                        <span id="dispRain">--mm</span>
+                    </div>
+                </div>
+                <div class="chart-wrapper small-chart"><canvas id="tempChart"></canvas></div>
+            </div>
+        </aside>
 
-        <div class="bento-card" style="padding: 0;">
+        <main class="map-container">
             <div id="dash-map"></div>
-        </div>
+            
+            <div class="map-controls-overlay">
+                <div class="map-filter-group">
+                    <div class="map-filter-label">Filter:</div>
+                    <div class="tag active" data-cat="all">All</div>
+                    <div class="tag" data-cat="Nature">Nature</div>
+                    <div class="tag" data-cat="Culture">Culture</div>
+                    <div class="tag" data-cat="Food">Food</div>
+                    <div class="tag" data-cat="Stay">Stay</div>
+                </div>
+                
+                <div class="map-slider-group">
+                    <div class="map-slider-label">Month: <span id="monthDisplay">July</span></div>
+                    <input type="range" min="1" max="12" value="7" id="monthSlider">
+                </div>
+            </div>
 
-        <div class="charts-col">
-            <div class="bento-card">
-                <div class="chart-wrapper"><canvas id="tempChart"></canvas></div>
+            <a href="interactive.html" class="start-btn">
+                <i class="fa-solid fa-route"></i> Start Planning My Trip
+            </a>
+        </main>
+
+        <aside class="right-panel">
+            
+            <div class="panel-header">
+                <div class="header-text-group">
+                    <h3>YUNote</h3>
+                    <div id="currentLocationTag" class="location-badge">
+                        <i class="fa-solid fa-location-dot"></i> <span>All Yunnan</span>
+                    </div>
+                </div>
+                <span class="refresh-icon" onclick="resetFeed()"><i class="fa-solid fa-rotate-right"></i></span>
             </div>
-            <div class="bento-card">
-                <div class="chart-wrapper"><canvas id="popChart"></canvas></div>
+
+            <div id="appContentArea" class="app-content-area">
+                <div class="feed-container" id="feedContainer">
+                    </div>
             </div>
-            <div class="bento-card">
-                <div class="chart-wrapper"><canvas id="budgetChart"></canvas></div>
+
+            <div class="xhs-footer">
+                <div class="nav-item" onclick="showSection('message')">
+                    <i class="fa-regular fa-comments"></i>
+                    <span>Message</span>
+                </div>
+                <div class="nav-item-center" onclick="showSection('create')">
+                    <i class="fa-solid fa-plus"></i>
+                </div>
+                <div class="nav-item" onclick="showSection('me')">
+                    <i class="fa-regular fa-user"></i>
+                    <span>Me</span>
+                </div>
             </div>
-        </div>
+
+        </aside>
+
     </div>
-
-    <a href="interactive.html" class="fab">Start Planning My Trip &rarr;</a>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="js/dashboard.js"></script>
+    <script src="js/dashboard.js"></script> 
 </body>
 </html>
