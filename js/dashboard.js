@@ -28,31 +28,12 @@ console.log("Current User ID:", CURRENT_USER_ID);
 // 变量定义
 const categoryColors = { "Nature": "#3494a6", "Culture": "#1a3c5a", "Food": "#bf4328", "Stay": "#e0b341" };
 const activityMapping = { "Floral & Splash": [3, 4, 5], "Mushroom Hunting": [6, 7, 8], "Golden Autumn": [9, 10, 11], "Snow & Sun": [12, 1, 2] };
-
-// ★★★ 修改点：用 Emoji 替换 img ★★★
 const monthlyThemes = {
-    4: { 
-        title: "Floral & Splash", 
-        desc: "Experience the Water Splashing Festival and blooming flowers.", 
-        emoji: "🌸" // 樱花/花朵
-    },
-    7: { 
-        title: "Mushroom Hunting", 
-        desc: "The rainy season brings delicious wild mushrooms.", 
-        emoji: "🍄" // 蘑菇
-    },
-    10: { 
-        title: "Golden Autumn", 
-        desc: "Golden rice terraces and harvest season.", 
-        emoji: "🌾" // 稻穗
-    },
-    12: { 
-        title: "Snow & Sun", 
-        desc: "Enjoy the snow-capped mountains under the warm sun.", 
-        emoji: "🏔️" // 雪山
-    }
+    4: { title: "Floral & Splash", desc: "Experience the Water Splashing Festival and blooming flowers.", emoji: "🌸" },
+    7: { title: "Mushroom Hunting", desc: "The rainy season brings delicious wild mushrooms.", emoji: "🍄" },
+    10: { title: "Golden Autumn", desc: "Golden rice terraces and harvest season.", emoji: "🌾" },
+    12: { title: "Snow & Sun", desc: "Enjoy the snow-capped mountains under the warm sun.", emoji: "🏔️" }
 };
-
 const categoryImages = {
     "Stay": "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070",
     "Food": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2070",
@@ -75,7 +56,7 @@ async function initApp() {
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
     markers = L.layerGroup().addTo(map);
 
-    loadBoundaries();
+    // ★★★ 修改点：删除了 loadBoundaries() 调用 ★★★
     await syncWishlist();
 
     try {
@@ -89,7 +70,7 @@ async function initApp() {
             return {
                 id: String(p.osm_id), name: p.name_E || p.name,
                 lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0],
-                cat: p.Filter, score: parseFloat(p.Score || 0), 
+                cat: p.Filter, score: parseFloat(p.Score || 0),
                 desc: p.Description,
                 img: p.Pic || categoryImages[p.Filter] || categoryImages['Nature'],
                 fac: [p.Wifi, p.Parking, p.Accessibility, (p.Filter === 'Food' || p.Filter === 'Stay' ? 1 : 0)], 
@@ -107,22 +88,7 @@ async function initApp() {
     } catch (error) { console.error("Failed to load POI data:", error); }
 }
 
-async function loadBoundaries() {
-    try {
-        const response = await fetch('https://geo.datav.aliyun.com/areas_v3/bound/530000_full.json');
-        const data = await response.json();
-        const cityTranslations = { "昆明市": "Kunming", "曲靖市": "Qujing", "玉溪市": "Yuxi", "保山市": "Baoshan", "昭通市": "Zhaotong", "丽江市": "Lijiang", "普洱市": "Pu'er", "临沧市": "Lincang", "楚雄彝族自治州": "Chuxiong", "红河哈尼族彝族自治州": "Honghe", "文山壮族苗族自治州": "Wenshan", "西双版纳傣族自治州": "Xishuangbanna", "大理白族自治州": "Dali", "德宏傣族景颇族自治州": "Dehong", "怒江傈僳族自治州": "Nujiang", "迪庆藏族自治州": "Diqing" };
-        L.geoJSON(data, {
-            style: { color: '#636e72', weight: 1.2, opacity: 0.8, dashArray: '5, 5', fillOpacity: 0 },
-            onEachFeature: function(feature, layer) {
-                if (feature.properties && feature.properties.name) {
-                    const enName = cityTranslations[feature.properties.name] || feature.properties.name;
-                    layer.bindTooltip(enName, { permanent: false, direction: 'center', className: 'boundary-tooltip' });
-                }
-            }
-        }).addTo(map);
-    } catch (e) { console.error(e); }
-}
+// ★★★ 修改点：删除了 async function loadBoundaries() {...} 整个函数 ★★★
 
 async function syncWishlist() {
     try {
@@ -274,7 +240,6 @@ function updateMonth(mIndex) {
     const theme = monthlyThemes[themeKey];
     document.getElementById('themeTitle').innerText = theme.title;
     document.getElementById('themeDesc').innerText = theme.desc;
-    // ★★★ 修改点：更新 Emoji 而不是 img src ★★★
     document.getElementById('themeEmoji').innerText = theme.emoji;
 
     if (tempChart) {
@@ -317,7 +282,6 @@ window.handleHomeClick = function() {
 
 window.resetMapView = function() { window.handleHomeClick(); };
 
-// ... (Create Post and Detail Logic remains the same) ...
 const contentArea = document.getElementById('appContentArea');
 const createPostContainer = document.getElementById('createPostContainer');
 let currentSelectedLocationId = null; 
