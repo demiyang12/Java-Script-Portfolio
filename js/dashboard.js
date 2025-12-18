@@ -14,7 +14,19 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const CURRENT_USER_ID = "user_demo_001"; 
+
+function getOrCreateUserId() {
+    const STORAGE_KEY = "yunstagram_user_id";
+    const existing = localStorage.getItem(STORAGE_KEY);
+    if (existing) return existing;
+    const rand = (crypto.randomUUID && crypto.randomUUID()) || Math.random().toString(36).substring(2, 9);
+    const newId = "user_" + rand;
+    localStorage.setItem(STORAGE_KEY, newId);
+    return newId;
+}
+
+const CURRENT_USER_ID = getOrCreateUserId();
+const CURRENT_USER_NAME = "Explorer";
 
 // =========================================
 // 1. 数据配置 & 辅助变量
@@ -53,6 +65,7 @@ let userWishlist = new Set();
 let map, markers;
 let popChart = null; 
 let tempChart = null;
+let locationOptionsBuilt = false;
 
 // =========================================
 // 2. 初始化与数据加载
@@ -102,6 +115,8 @@ async function initApp() {
         updateMonth(6); 
         loadAllPosts();
         initSearch();
+        populateLocationDropdown();
+        attachImageInputListener();
 
     } catch (error) {
         console.error("Failed to load POI data:", error);
@@ -508,28 +523,39 @@ window.resetMapView = function() {
 const contentArea = document.getElementById('appContentArea');
 const createPostContainer = document.getElementById('createPostContainer');
 let currentSelectedLocationId = null;
+let currentSelectedLocationName = null;
+let feedUnsubscribe = null;
+let detailUnsubscribe = null;
 
 window.loadPostsForLocation = function(poiId, poiName) {
     currentSelectedLocationId = poiId;
-    updateLocationBadge(poiName, 'location');
+    currentSelectedLocationName = poiName;
+    updateLocationBadge(poiName, 'location', () => fetchPosts(poiId));
     fetchPosts(poiId);
 };
 
 window.loadAllPosts = function() {
     currentSelectedLocationId = null;
-    updateLocationBadge('All Yunnan', 'globe');
+    currentSelectedLocationName = null;
+    updateLocationBadge('All Yunnan', 'globe', () => fetchPosts(null));
     fetchPosts(null);
 };
 
 window.loadMyPosts = function() {
-    updateLocationBadge('My Posts', 'user');
+    currentSelectedLocationId = null;
+    currentSelectedLocationName = null;
+    updateLocationBadge('My Posts', 'user', () => fetchPosts(null, true));
     fetchPosts(null, true);
 };
 
-function updateLocationBadge(text, iconType) {
+function updateLocationBadge(text, iconType, onClick) {
     const badge = document.getElementById('currentLocationTag');
     let icon = iconType === 'location' ? 'fa-location-dot' : (iconType === 'user' ? 'fa-user' : 'fa-globe');
-    if(badge) badge.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${text}</span>`;
+    if (badge) {
+        badge.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${text}</span>`;
+        badge.style.cursor = onClick ? 'pointer' : 'default';
+        badge.onclick = onClick || null;
+    }
 }
 
 function fetchPosts(locationId = null, onlyMine = false) {
@@ -540,9 +566,18 @@ function fetchPosts(locationId = null, onlyMine = false) {
     if (onlyMine) constraints.push(where("userId", "==", CURRENT_USER_ID));
     
     const finalQuery = query(q, ...constraints);
-    onSnapshot(finalQuery, (snapshot) => {
+    if (feedUnsubscribe) feedUnsubscribe();
+    feedUnsubscribe = onSnapshot(finalQuery, (snapshot) => {
         let posts = [];
-        snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            posts.push({ 
+                id: docSnap.id, 
+                ...data, 
+                likes: Array.isArray(data.likes) ? data.likes : [], 
+                comments: Array.isArray(data.comments) ? data.comments : [] 
+            });
+        });
         renderFeedHTML(posts);
     });
 }
@@ -561,7 +596,7 @@ function renderFeedHTML(posts) {
                     <div class="feed-title">${item.title}</div>
                     <div class="feed-meta">
                         <div class="user-info"><div class="avatar"></div><span>${item.user}</span></div>
-                        <div class="like-box"><i class="fa-regular fa-heart"></i> ${item.likes || 0}</div>
+                        <div class="like-box"><i class="fa-regular fa-heart"></i> ${Array.isArray(item.likes) ? item.likes.length : (item.likes || 0)}</div>
                     </div>
                 </div>
             </div>
@@ -571,63 +606,111 @@ function renderFeedHTML(posts) {
     contentArea.innerHTML = html;
 }
 
-window.showPostDetail = async function(docId) {
+window.showPostDetail = function(docId) {
     const docRef = doc(db, "posts", docId);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return;
-    const item = { id: docSnap.id, ...docSnap.data() };
-    const detailHtml = `
-        <div style="padding:20px; background:white; min-height:100%;">
-            <div style="display:flex;align-items:center;margin-bottom:15px;color:#666;cursor:pointer;" onclick="window.showSection('home')"><i class="fa-solid fa-arrow-left"></i> &nbsp; Back</div>
-            <img src="${item.img}" style="width:100%;border-radius:12px;margin-bottom:15px;">
-            <h2 style="font-size:1.2rem;margin-bottom:10px;">${item.title}</h2>
-            <div style="display:flex;gap:10px;align-items:center;margin-bottom:15px;">
-                <div class="avatar" style="width:30px;height:30px;"></div>
-                <span style="font-weight:bold;">${item.user}</span>
+    if (detailUnsubscribe) detailUnsubscribe();
+    detailUnsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (!docSnap.exists()) return;
+        const item = { id: docSnap.id, ...docSnap.data() };
+        const likes = Array.isArray(item.likes) ? item.likes : [];
+        const comments = Array.isArray(item.comments) ? item.comments : [];
+        currentSelectedLocationId = item.locationId || null;
+        currentSelectedLocationName = item.locationName || null;
+        updateLocationBadge(item.locationName || 'Post', 'location', () => {
+            if (item.locationId) {
+                window.loadPostsForLocation(item.locationId, item.locationName || 'Location');
+            }
+        });
+
+        const detailHtml = `
+            <div style="padding:20px; background:white; min-height:100%;">
+                <div style="display:flex;align-items:center;margin-bottom:15px;color:#666;cursor:pointer;" onclick="window.showSection('home')"><i class="fa-solid fa-arrow-left"></i> &nbsp; Back</div>
+                <div style="margin-bottom:10px; color:#888; font-size:0.9rem; cursor:pointer;" onclick="window.loadPostsForLocation('${item.locationId}', '${item.locationName}')">
+                    <i class="fa-solid fa-location-dot"></i> ${item.locationName || 'Unknown'}
+                </div>
+                <img src="${item.img}" style="width:100%;border-radius:12px;margin-bottom:15px;object-fit:cover;max-height:320px;">
+                <h2 style="font-size:1.2rem;margin-bottom:10px;">${item.title}</h2>
+                <div style="display:flex;gap:10px;align-items:center;margin-bottom:15px;">
+                    <div class="avatar" style="width:30px;height:30px;"></div>
+                    <span style="font-weight:bold;">${item.user}</span>
+                </div>
+                <p style="color:#555;">${item.content}</p>
+                <div style="display:flex;align-items:center;gap:12px;margin:18px 0;">
+                    <button id="likeBtn" style="border:none;background:#ffe9e3;color:#bf4328;padding:8px 14px;border-radius:20px;font-weight:600;cursor:pointer;">
+                        <i class="${likes.includes(CURRENT_USER_ID) ? 'fa-solid' : 'fa-regular'} fa-heart"></i> <span id="likeCount">${likes.length}</span>
+                    </button>
+                </div>
+                <div style="margin-top:10px;">
+                    <h4 style="margin-bottom:10px;">Comments (${comments.length})</h4>
+                    <div id="commentList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
+                        ${comments.map(c => `
+                            <div style="background:#f9f9f9;padding:10px;border-radius:10px;">
+                                <div style="font-weight:600;font-size:0.95rem;">${c.user || 'Traveler'}</div>
+                                <div style="color:#555;margin-top:4px;">${c.text || ''}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <input id="commentInput" placeholder="Add a comment..." style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;">
+                        <button id="commentSubmit" style="background:var(--color-orange);color:white;border:none;padding:10px 14px;border-radius:8px;font-weight:600;cursor:pointer;">Send</button>
+                    </div>
+                </div>
             </div>
-            <p style="color:#555;">${item.content}</p>
-        </div>
-    `;
-    contentArea.innerHTML = detailHtml;
+        `;
+        contentArea.innerHTML = detailHtml;
+
+        document.getElementById('likeBtn')?.addEventListener('click', () => toggleLike(item.id, likes));
+        document.getElementById('commentSubmit')?.addEventListener('click', async () => {
+            const text = document.getElementById('commentInput').value.trim();
+            if (!text) return;
+            await addComment(item.id, text);
+            document.getElementById('commentInput').value = '';
+        });
+    });
+    return detailUnsubscribe;
 };
 
 window.showSection = function(section) {
+    if (detailUnsubscribe) { detailUnsubscribe(); detailUnsubscribe = null; }
     createPostContainer.style.display = 'none';
     contentArea.style.display = 'block';
     if (section === 'home') {
-        currentSelectedLocationId ? fetchPosts(currentSelectedLocationId) : window.loadAllPosts();
+        window.handleHomeNav();
     } else if (section === 'create') {
-        if (!currentSelectedLocationId) {
-            alert("Please select a location on the map first!");
-            return;
-        }
+        prepareCreateForm();
         contentArea.style.display = 'none';
         createPostContainer.style.display = 'flex';
-        const loc = poiData.find(p => p.id === currentSelectedLocationId);
-        document.querySelector('#createPostContainer h3').innerText = `Post to: ${loc ? loc.name : 'Unknown'}`;
     } else if (section === 'me') {
         window.loadMyPosts();
     }
 };
 
 window.submitNewPost = async function() {
-    const content = document.getElementById('newPostContent').value;
+    const content = document.getElementById('newPostContent').value.trim();
+    const title = document.getElementById('newPostTitle').value.trim() || "Travel Memory";
+    const selectedLocationId = getLocationForPost();
     if (!content) return alert("Write something!");
+    if (!selectedLocationId) return alert("Please select a location.");
     try {
-        const loc = poiData.find(p => p.id === currentSelectedLocationId);
+        const loc = poiData.find(p => p.id === selectedLocationId);
+        const imgData = await getSelectedImageData();
         await addDoc(collection(db, "posts"), {
-            title: "Travel Memory",
-            content: content,
-            locationId: String(currentSelectedLocationId),
+            title,
+            content,
+            locationId: String(selectedLocationId),
             locationName: loc ? loc.name : "Unknown",
             userId: CURRENT_USER_ID,
-            user: "Explorer",
-            likes: 0,
-            img: "https://images.unsplash.com/photo-1504280590459-f2f293b9e597?q=80&w=2070", 
+            user: CURRENT_USER_NAME,
+            likes: [],
+            comments: [],
+            img: imgData,
             timestamp: Timestamp.now()
         });
         document.getElementById('newPostContent').value = '';
-        window.showSection('home');
+        document.getElementById('newPostTitle').value = '';
+        document.getElementById('postImageInput').value = '';
+        document.getElementById('postImagePreview').style.display = 'none';
+        window.handleHomeNav();
     } catch (e) { alert("Failed to post: " + e.message); }
 };
 
@@ -635,5 +718,98 @@ window.resetFeed = function() {
     window.loadAllPosts();
     window.resetMapView();
 };
+
+window.handleHomeNav = function() {
+    window.resetMapView();
+};
+
+function populateLocationDropdown() {
+    if (locationOptionsBuilt) return;
+    const dropdown = document.getElementById('locationDropdown');
+    if (!dropdown) return;
+    poiData
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(p => {
+            const option = document.createElement('option');
+            option.value = p.id;
+            option.textContent = `${p.name} (${p.cat})`;
+            dropdown.appendChild(option);
+        });
+    locationOptionsBuilt = true;
+}
+
+function prepareCreateForm() {
+    const dropdownRow = document.getElementById('locationSelectRow');
+    const lockedRow = document.getElementById('lockedLocationRow');
+    const lockedValue = document.getElementById('lockedLocationValue');
+    const dropdown = document.getElementById('locationDropdown');
+
+    if (currentSelectedLocationId && currentSelectedLocationName) {
+        dropdownRow.style.display = 'none';
+        lockedRow.style.display = 'flex';
+        lockedValue.innerText = currentSelectedLocationName;
+        dropdown.value = currentSelectedLocationId;
+    } else {
+        dropdownRow.style.display = 'flex';
+        lockedRow.style.display = 'none';
+    }
+}
+
+function getLocationForPost() {
+    if (currentSelectedLocationId && currentSelectedLocationName) return currentSelectedLocationId;
+    const dropdown = document.getElementById('locationDropdown');
+    return dropdown?.value || null;
+}
+
+function attachImageInputListener() {
+    const fileInput = document.getElementById('postImageInput');
+    if (fileInput) {
+        fileInput.addEventListener('change', handleImagePreview);
+    }
+}
+
+function handleImagePreview(e) {
+    const file = e.target.files[0];
+    const previewContainer = document.getElementById('postImagePreview');
+    const imgEl = previewContainer?.querySelector('img');
+    if (!file || !previewContainer || !imgEl) {
+        if (previewContainer) previewContainer.style.display = 'none';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        imgEl.src = evt.target.result;
+        previewContainer.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+async function getSelectedImageData() {
+    const previewContainer = document.getElementById('postImagePreview');
+    const imgEl = previewContainer?.querySelector('img');
+    if (previewContainer && previewContainer.style.display !== 'none' && imgEl?.src) {
+        return imgEl.src;
+    }
+    return "https://images.unsplash.com/photo-1504280590459-f2f293b9e597?q=80&w=2070";
+}
+
+async function toggleLike(postId, currentLikes = []) {
+    const docRef = doc(db, "posts", postId);
+    const liked = currentLikes.includes(CURRENT_USER_ID);
+    const newLikes = liked ? arrayRemove(CURRENT_USER_ID) : arrayUnion(CURRENT_USER_ID);
+    await updateDoc(docRef, { likes: newLikes });
+}
+
+async function addComment(postId, text) {
+    const docRef = doc(db, "posts", postId);
+    const newComment = {
+        userId: CURRENT_USER_ID,
+        user: CURRENT_USER_NAME,
+        text,
+        timestamp: Timestamp.now()
+    };
+    await updateDoc(docRef, { comments: arrayUnion(newComment) });
+}
 
 initApp();
