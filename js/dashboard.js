@@ -327,9 +327,18 @@ function fetchPosts(locationId = null, onlyMine = false) {
     if (onlyMine) constraints.push(where("userId", "==", CURRENT_USER_ID));
     
     const finalQuery = query(q, ...constraints);
-    onSnapshot(finalQuery, (snapshot) => {
+    if (feedUnsubscribe) feedUnsubscribe();
+    feedUnsubscribe = onSnapshot(finalQuery, (snapshot) => {
         let posts = [];
-        snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            posts.push({ 
+                id: docSnap.id, 
+                ...data, 
+                likes: Array.isArray(data.likes) ? data.likes : [], 
+                comments: Array.isArray(data.comments) ? data.comments : [] 
+            });
+        });
         renderFeedHTML(posts);
     });
 }
@@ -347,7 +356,7 @@ function renderFeedHTML(posts) {
     contentArea.innerHTML = html;
 }
 
-window.showPostDetail = async function(docId) {
+window.showPostDetail = function(docId) {
     const docRef = doc(db, "posts", docId);
     onSnapshot(docRef, (docSnap) => {
         if (!docSnap.exists()) return;
@@ -399,6 +408,7 @@ window.submitComment = async function(postId) {
 };
 
 window.showSection = function(section) {
+    if (detailUnsubscribe) { detailUnsubscribe(); detailUnsubscribe = null; }
     createPostContainer.style.display = 'none';
     contentArea.style.display = 'block';
     
@@ -512,5 +522,98 @@ window.submitNewPost = async function() {
 window.resetFeed = function() {
     window.handleHomeClick();
 };
+
+window.handleHomeNav = function() {
+    window.resetMapView();
+};
+
+function populateLocationDropdown() {
+    if (locationOptionsBuilt) return;
+    const dropdown = document.getElementById('locationDropdown');
+    if (!dropdown) return;
+    poiData
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(p => {
+            const option = document.createElement('option');
+            option.value = p.id;
+            option.textContent = `${p.name} (${p.cat})`;
+            dropdown.appendChild(option);
+        });
+    locationOptionsBuilt = true;
+}
+
+function prepareCreateForm() {
+    const dropdownRow = document.getElementById('locationSelectRow');
+    const lockedRow = document.getElementById('lockedLocationRow');
+    const lockedValue = document.getElementById('lockedLocationValue');
+    const dropdown = document.getElementById('locationDropdown');
+
+    if (currentSelectedLocationId && currentSelectedLocationName) {
+        dropdownRow.style.display = 'none';
+        lockedRow.style.display = 'flex';
+        lockedValue.innerText = currentSelectedLocationName;
+        dropdown.value = currentSelectedLocationId;
+    } else {
+        dropdownRow.style.display = 'flex';
+        lockedRow.style.display = 'none';
+    }
+}
+
+function getLocationForPost() {
+    if (currentSelectedLocationId && currentSelectedLocationName) return currentSelectedLocationId;
+    const dropdown = document.getElementById('locationDropdown');
+    return dropdown?.value || null;
+}
+
+function attachImageInputListener() {
+    const fileInput = document.getElementById('postImageInput');
+    if (fileInput) {
+        fileInput.addEventListener('change', handleImagePreview);
+    }
+}
+
+function handleImagePreview(e) {
+    const file = e.target.files[0];
+    const previewContainer = document.getElementById('postImagePreview');
+    const imgEl = previewContainer?.querySelector('img');
+    if (!file || !previewContainer || !imgEl) {
+        if (previewContainer) previewContainer.style.display = 'none';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        imgEl.src = evt.target.result;
+        previewContainer.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+async function getSelectedImageData() {
+    const previewContainer = document.getElementById('postImagePreview');
+    const imgEl = previewContainer?.querySelector('img');
+    if (previewContainer && previewContainer.style.display !== 'none' && imgEl?.src) {
+        return imgEl.src;
+    }
+    return "https://images.unsplash.com/photo-1504280590459-f2f293b9e597?q=80&w=2070";
+}
+
+async function toggleLike(postId, currentLikes = []) {
+    const docRef = doc(db, "posts", postId);
+    const liked = currentLikes.includes(CURRENT_USER_ID);
+    const newLikes = liked ? arrayRemove(CURRENT_USER_ID) : arrayUnion(CURRENT_USER_ID);
+    await updateDoc(docRef, { likes: newLikes });
+}
+
+async function addComment(postId, text) {
+    const docRef = doc(db, "posts", postId);
+    const newComment = {
+        userId: CURRENT_USER_ID,
+        user: CURRENT_USER_NAME,
+        text,
+        timestamp: Timestamp.now()
+    };
+    await updateDoc(docRef, { comments: arrayUnion(newComment) });
+}
 
 initApp();
