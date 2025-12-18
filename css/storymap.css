@@ -57,53 +57,85 @@ h2 { color: #bf4328; font-size: 1.1rem; margin-bottom: 25px; text-transform: upp
 }
 .data-explanation h4 { margin: 0 0 10px 0; color: #2c3e50; text-transform: uppercase; font-size: 0.85rem; }
 
-/* --- Right Bottom Screenshot Placeholder --- */
+/* --- Right Bottom Screenshot Container (FINAL UPDATED) --- */
 .screenshot-placeholder {
     position: absolute;
     bottom: 30px;
     right: 30px;
-    width: 400px;
-    height: 280px;
-    border: 3px dashed rgba(255,255,255,0.6);
-    background: rgba(0,0,0,0.2); /* Semi-transparent dark */
-    backdrop-filter: blur(5px);
-    border-radius: 12px;
+    width: 300px;      /* 宽度固定 */
+    height: auto;      /* !!! 高度随内容自动撑开，不再强制 !!! */
+    
+    background: transparent; /* 去掉容器背景 */
+    border: none;            /* 去掉容器边框 */
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3); /* 整体投影保持 */
+    
     display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s;
+    flex-direction: column; 
+    transition: transform 0.3s;
     pointer-events: auto;
+    z-index: 25;
 }
+
 .screenshot-placeholder:hover {
-    border-color: #fff;
-    background: rgba(0,0,0,0.4);
+    transform: translateY(-5px);
+    box-shadow: 0 20px 45px rgba(0,0,0,0.4);
 }
-.placeholder-content { text-align: center; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-.placeholder-content i { font-size: 40px; margin-bottom: 10px; display: block; }
+
+/* Image Style: 负责上半部分圆角和边框 */
+.screenshot-placeholder img {
+    width: 100%;
+    height: auto;       /* !!! 关键：保持原始比例，完整显示 !!! */
+    display: block;
+    
+    /* 边框样式 */
+    border: 3px solid rgba(255,255,255,0.9);
+    border-bottom: none; /* 下边框留给 caption 接力 */
+    
+    /* 圆角样式 */
+    border-radius: 12px 12px 0 0; /* 只有上面是圆角 */
+}
+
+/* Caption Style: 负责下半部分圆角和边框 */
+.caption {
+    background: #2c3e50;
+    color: #fff;
+    padding: 10px;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    
+    /* 边框样式 - 衔接图片 */
+    border: 3px solid rgba(255,255,255,0.9);
+    border-top: none; /* 不要有上边框，否则会双重粗细 */
+    
+    /* 圆角样式 */
+    border-radius: 0 0 12px 12px; /* 只有下面是圆角 */
+}
+
 
 /* --- Floating Legend (Transparent Background) --- */
 .legend-box {
-    position: absolute; /* Relative to viewport via JS or fixed layout */
-    /* Position will be handled by layout flow or fixed relative to sidebar */
-    left: 33%; /* Just right of the sidebar */
+    position: absolute; 
+    left: 33%; 
     bottom: 30px;
-    background: transparent; /* Transparent background */
+    background: transparent; 
     padding: 10px;
     z-index: 30;
     font-size: 0.9rem;
     display: none;
-    text-shadow: 0 0 5px rgba(255,255,255,1); /* White glow for readability */
+    text-shadow: 0 0 5px rgba(255,255,255,1); 
     pointer-events: none;
 }
 .legend-item { display: flex; align-items: center; margin-bottom: 6px; font-weight: bold; color: #2c3e50; }
 .legend-color { width: 14px; height: 14px; border-radius: 50%; margin-right: 8px; display: inline-block; border: 1px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
 /* --- Map Markers --- */
-
-/* Slide 2: Price Bubble (Using 'Stay' Color) */
+/* Slide 2: Price Bubble */
 .price-bubble {
     background: white;
-    border: 2px solid #e0b341; /* Stay Color */
+    border: 2px solid #e0b341; 
     border-radius: 20px;
     padding: 3px 10px;
     text-align: center;
@@ -120,20 +152,20 @@ h2 { color: #bf4328; font-size: 1.1rem; margin-bottom: 25px; text-transform: upp
     border-width: 6px 6px 0; border-style: solid; border-color: #e0b341 transparent transparent transparent;
 }
 
-/* Slide 4: Target Shape (Using 'Culture' Color) */
+/* Slide 4: Target Shape */
 .target-icon {
     position: relative; width: 100%; height: 100%;
     display: flex; align-items: center; justify-content: center;
 }
 .target-ring {
     width: 26px; height: 26px;
-    border: 3px solid #1a3c5a; /* Culture Color */
+    border: 3px solid #1a3c5a; 
     border-radius: 50%;
     animation: pulse 2s infinite;
 }
 .target-dot {
     width: 10px; height: 10px;
-    background: #1a3c5a; /* Culture Color */
+    background: #1a3c5a; 
     border-radius: 50%;
     position: absolute;
     top: 50%; left: 50%;
@@ -176,89 +208,57 @@ h2 { color: #bf4328; font-size: 1.1rem; margin-bottom: 25px; text-transform: upp
     transform: translateY(-2px);
     box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
 }
+
 /* =========================================
-   Mobile Adaptation (Add to bottom of css/storymap.css)
+   Mobile Adaptation
    ========================================= */
 @media (max-width: 768px) {
 
-    /* 1. Sidebar becomes a Bottom Sheet */
-    /* 文字容器变成底部抽屉样式 */
+    /* 1. Sidebar */
     .sidebar-wrapper {
-        width: 100%;       /* 占满屏幕宽度 */
-        height: 40vh;      /* 占据屏幕高度的 40% */
-        top: auto;         /* 取消顶部定位 */
-        bottom: 0;         /* 固定在底部 */
-        left: 0;
-        border-radius: 20px 20px 0 0; /* 顶部圆角，像个卡片 */
-        flex-direction: row; /* 让文字和数据解释左右排列（可选，或者保持上下）*/
-        padding: 0;
-        overflow: hidden; /* 防止圆角被内容撑破 */
+        width: 100%; height: 40vh; top: auto; bottom: 0; left: 0;
+        border-radius: 20px 20px 0 0; flex-direction: row; padding: 0; overflow: hidden; 
     }
-
-    /* 调整文字区域布局，让它在小屏幕更好看 */
-    .text-content {
-        width: 60%; /* 文字占左边 60% */
-        padding: 20px;
-        overflow-y: auto; /* 内容多时可以滚动 */
-    }
-
-    /* 数据解释区域变小 */
-    .data-explanation {
-        width: 40%;
-        padding: 15px;
-        border-top: none;
-        border-left: 1px solid #eee;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-    
-    /* 字体缩小适配手机 */
+    .text-content { width: 60%; padding: 20px; overflow-y: auto; }
+    .data-explanation { width: 40%; padding: 15px; border-top: none; border-left: 1px solid #eee; display: flex; flex-direction: column; justify-content: center; }
     h1 { font-size: 1.5rem; margin-bottom: 8px; }
     h2 { font-size: 0.9rem; margin-bottom: 10px; }
     .narrative-text { font-size: 0.85rem; line-height: 1.4; }
     .narrative-text p { margin-bottom: 8px; }
     .chapter-label { font-size: 0.65rem; margin-bottom: 8px; }
-    
-    /* 隐藏部分不需要的装饰以节省空间 */
     .data-explanation h4 { font-size: 0.7rem; }
     .data-explanation p { font-size: 0.75rem; }
 
-    /* 2. Screenshot becomes smaller and floats above sidebar */
-    /* 截图变小并漂浮在文字容器上方 */
+    /* 2. Screenshot Adaptation */
     .screenshot-placeholder {
-        width: 140px;          /* 宽度变小 */
-        height: 90px;          /* 高度变小 */
-        right: 15px;           /* 靠右 */
-        bottom: 42vh;          /* !!! 关键：位置定在 sidebar 高度(40vh)稍上面一点 */
-        background: rgba(0,0,0,0.6); /* 背景深一点，增加对比度 */
-        border: 2px solid #fff;
-        z-index: 25;           /* 确保它在最上层 */
+        width: 140px;          
+        height: auto;          /* 手机上也保持自适应高度 */
+        right: 15px;           
+        bottom: 42vh;          
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     }
 
-    .placeholder-content i { font-size: 24px; margin-bottom: 5px; }
-    .placeholder-content span { font-size: 0.6rem; display: none; /* 手机上隐藏文字只留图标，或者保留看你喜好 */ }
-    .placeholder-content span { display: block; transform: scale(0.8); } /* 如果保留文字，缩小一点 */
+    /* 手机隐藏注释 */
+    .caption {
+        display: none;
+    }
+    
+    /* 手机上图片变成全圆角 + 全边框 */
+    .screenshot-placeholder img {
+        height: auto;
+        border: 2px solid #fff;
+        border-radius: 8px; /* 四周都是圆角 */
+    }
 
-    /* 3. Adjust Legend Position */
-    /* 图例移到左上角，防止遮挡底部文字 */
+    /* 3. Adjust Legend */
     .legend-box {
-        left: 15px;
-        bottom: auto; /* 取消底部定位 */
-        top: 80px;    /* 放在顶部，避开 Zoom 控件 */
-        background: rgba(255,255,255,0.8); /* 手机上给一点背景色防止看不清 */
-        padding: 8px;
+        left: 15px; bottom: auto; top: 80px;    
+        background: rgba(255,255,255,0.8); padding: 8px;
     }
     .legend-item { font-size: 0.8rem; margin-bottom: 3px; }
     .legend-color { width: 10px; height: 10px; }
 
-    /* 4. Last Slide Adjustment */
-    /* 最后一页的“开始旅程”居中 */
-    #step-4 .content-wrapper {
-        align-items: center;
-    }
-    #step-4 div[style*="background"] {
-        width: 85% !important;
-        padding: 30px 20px !important;
-    }
+    /* 4. Last Slide */
+    #step-4 .content-wrapper { align-items: center; }
+    #step-4 div[style*="background"] { width: 85% !important; padding: 30px 20px !important; }
 }
